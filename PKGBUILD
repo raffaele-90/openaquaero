@@ -1,21 +1,18 @@
 pkgname=openaquaero
-pkgver=2.2.0
-pkgrel=4
-pkgdesc="Software nativo di controllo termico per hardware Aquacomputer Aquaero 6 LT"
+pkgver=2.2.1
+pkgrel=1
+pkgdesc="Software di controllo nativo per Aquaero 6 LT"
 arch=('any')
 url="https://github.com/raffaele-90/openaquaero"
 license=('GPL3')
 depends=('python' 'pyside6')
 optdepends=('python-pynvml: supporto lettura sensori GPU Nvidia')
-source=('engine.py'
-        'openaquaero.py'
-        'osd_widget.py'
-        'openaquaero.png'
-        'openaquaero.install')
-sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
-install=openaquaero.install
+source=("$pkgname-$pkgver.tar.gz::https://github.com/raffaele-90/openaquaero/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
 
 package() {
+    cd "$pkgname-$pkgver"
+
     # Directory di sistema
     install -dm755 "$pkgdir/usr/lib/$pkgname"
     install -dm755 "$pkgdir/usr/bin"

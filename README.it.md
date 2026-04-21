@@ -4,7 +4,7 @@ OpenAquaero è un pannello di controllo termico open-source, nativo e leggero pe
 
 ## ⚠ Scopo del Progetto e Limitazioni
 Questo progetto si concentra sull'offrire un'esperienza di controllo reattiva ed essenziale per i componenti principali dell'impianto. Non è da intendersi come una replica completa della suite ufficiale per Windows.
-* **Hardware Supportato:** Attualmente gestisce le **4 uscite principali a 12V** (ventole e pompe).
+* **Hardware Supportato:** Attualmente gestisce le **4 uscite principali a 12V**.
 * **Controllo in Tempo Reale:** Il software opera in modalità override in tempo reale. Il salvataggio permanente dei profili nella EPROM interna della scheda non è ancora supportato.
 * **Stato PWM/DC:** Le uscite funzionano in base al loro ultimo stato hardware configurato. Lo switch via software tra le modalità PWM e DC è in fase di sviluppo.
 * **Moduli Estesi:** Dispositivi Aquabus e sensori di allarme esterni complessi non sono attualmente gestiti.

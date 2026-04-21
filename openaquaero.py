@@ -15,7 +15,6 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
 from PySide6.QtCore import Qt, QThread, Signal, QRectF, QTimer
 from PySide6.QtGui import QPainter, QColor, QPen, QPolygonF, QBrush, QAction, QIcon, QFont
 from PySide6.QtCore import QPointF
-from PySide6.QtNetwork import QLocalServer, QLocalSocket
 
 from engine import AquaeroEngine
 from osd_widget import AquaeroOSD
@@ -24,7 +23,7 @@ CONFIG_DIR = os.path.expanduser("~/.config/openaquaero")
 CONFIG_FILE = os.path.join(CONFIG_DIR, "openaquaero.json")
 
 def load_config():
-    """Deserializza il file JSON delle impostazioni. Fornisce un dizionario di default se assente."""
+    """Deserializes JSON settings file. Provides default dictionary if missing."""
     default_config = {
         "lang": "it",
         "sensors": {},
@@ -37,9 +36,7 @@ def load_config():
         "autoswitch_enabled": False,
         "process_profiles": {},
         "security": {},
-        "osd_config": {
-            "position_index": 0
-        }
+        "osd_config": {}
     }
     if os.path.exists(CONFIG_FILE):
         try:
@@ -52,7 +49,7 @@ def load_config():
     return default_config
 
 def save_config(cfg):
-    """Serializza il dizionario delle impostazioni correnti scrivendolo nel file di configurazione utente."""
+    """Serializes the current settings dictionary to the user configuration file."""
     os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
     with open(CONFIG_FILE, "w") as f:
         json.dump(cfg, f, indent=4)
@@ -97,7 +94,7 @@ TRANSLATIONS = {
         "sidebar_fan": "Controllo Uscite",
         "sidebar_sec": "Impostazioni di Sicurezza",
         "sidebar_osd": "Configurazione OSD",
-        "sec_title": "🛡️ Impostazioni di Sicurezza (Fail-Safe)",
+        "sec_title": "Impostazioni di Sicurezza (Fail-Safe)",
         "sec_info": "Configura parametri di emergenza indipendenti per singola uscita. Garantisce l'integrità del sistema intervenendo automaticamente in caso di usura hardware, anomalie idrauliche o cali critici di rendimento.",
         "sec_rpm": "Allarme rotazione (soglia critica ≤):",
         "sec_temp": "Allarme temperatura (soglia critica ≥):",
@@ -110,7 +107,7 @@ TRANSLATIONS = {
         "sec_saved_msg": "Impostazioni di emergenza salvate con successo.",
         "osd_title": "🖥️ Configurazione OSD",
         "osd_info": "Seleziona quali sensori mostrare in sovrimpressione e assegna loro un nome personalizzato. Tutti i sensori sono stati rilevati automaticamente.",
-        "osd_hotkey": "💡 <b>Attivazione Rapida in Gioco (HotKey):</b><br>Per mostrare/nascondere o spostare l'OSD in gioco, usa gli strumenti della tua distribuzione.<br>Crea due scorciatoie da tastiera (es. <b>F12</b> e <b>F2</b>) e associale a questi comandi:<br>▶ Mostra/Nascondi: <code>openaquaero --toggle-osd</code><br>▶ Sposta posizione OSD: <code>openaquaero --cycle-position</code>",
+        "osd_hotkey": "💡 <b>Posizionamento Libero:</b><br>L'OSD può essere spostato liberamente sul desktop trascinandolo con il mouse. La posizione verrà salvata in automatico.",
         "osd_global": "Impostazioni Globali OSD",
         "osd_show": "Mostra Pannello OSD",
         "osd_scale": "   Scala Interfaccia:",
@@ -188,7 +185,7 @@ TRANSLATIONS = {
         "sidebar_fan": "Outputs Control",
         "sidebar_sec": "Security Settings",
         "sidebar_osd": "OSD Configuration",
-        "sec_title": "🛡️ Security Settings (Fail-Safe)",
+        "sec_title": "Security Settings (Fail-Safe)",
         "sec_info": "Configure independent emergency parameters for each output. Guarantees system integrity by intervening automatically in case of hardware wear, hydraulic anomalies, or critical performance drops.",
         "sec_rpm": "Rotation alarm (critical threshold ≤):",
         "sec_temp": "Temperature alarm (critical threshold ≥):",
@@ -201,7 +198,7 @@ TRANSLATIONS = {
         "sec_saved_msg": "Emergency settings saved successfully.",
         "osd_title": "🖥️ OSD Configuration",
         "osd_info": "Select which sensors to show on the overlay and assign them a custom name. All sensors have been detected automatically.",
-        "osd_hotkey": "💡 <b>In-Game Quick Activation (HotKey):</b><br>To show/hide or move the OSD in-game, use your distribution's tools.<br>Create two keyboard shortcuts (e.g., <b>F12</b> and <b>F2</b>) and bind them to these commands:<br>▶ Show/Hide: <code>openaquaero --toggle-osd</code><br>▶ Move OSD position: <code>openaquaero --cycle-position</code>",
+        "osd_hotkey": "💡 <b>Free Positioning:</b><br>The OSD can be freely moved around the desktop by dragging it with the mouse. The position is saved automatically.",
         "osd_global": "Global OSD Settings",
         "osd_show": "Show OSD Panel",
         "osd_scale": "   Interface Scale:",
@@ -279,7 +276,7 @@ TRANSLATIONS = {
         "sidebar_fan": "Ausgangssteuerung",
         "sidebar_sec": "Sicherheitseinstellungen",
         "sidebar_osd": "OSD-Konfiguration",
-        "sec_title": "🛡️ Sicherheitseinstellungen (Fail-Safe)",
+        "sec_title": "Sicherheitseinstellungen (Fail-Safe)",
         "sec_info": "Konfigurieren Sie unabhängige Notfallparameter für jeden Ausgang. Garantiert die Systemintegrität durch automatisches Eingreifen bei Hardwareverschleiß, hydraulischen Anomalien oder kritischen Leistungseinbrüchen.",
         "sec_rpm": "Rotationsalarm (kritische Schwelle ≤):",
         "sec_temp": "Temperaturalarm (kritische Schwelle ≥):",
@@ -292,7 +289,7 @@ TRANSLATIONS = {
         "sec_saved_msg": "Notfalleinstellungen erfolgreich gespeichert.",
         "osd_title": "🖥️ OSD-Konfiguration",
         "osd_info": "Wählen Sie aus, welche Sensoren im Overlay angezeigt werden sollen, und weisen Sie ihnen einen benutzerdefinierten Namen zu. Alle Sensoren wurden automatisch erkannt.",
-        "osd_hotkey": "💡 <b>Schnellaktivierung im Spiel (HotKey):</b><br>Um das OSD im Spiel ein-/auszublenden oder zu verschieben, verwenden Sie die Tools Ihrer Distribution.<br>Erstellen Sie zwei Tastenkombinationen (z. B. <b>F12</b> und <b>F2</b>) und weisen Sie diese Befehle zu:<br>▶ Ein-/Ausblenden: <code>openaquaero --toggle-osd</code><br>▶ OSD-Position verschieben: <code>openaquaero --cycle-position</code>",
+        "osd_hotkey": "💡 <b>Freie Positionierung:</b><br>Das OSD kann mit der Maus frei auf dem Desktop verschoben werden. Die Position wird automatisch gespeichert.",
         "osd_global": "Globale OSD-Einstellungen",
         "osd_show": "OSD-Panel anzeigen",
         "osd_scale": "   Schnittstellenskalierung:",
@@ -370,7 +367,7 @@ TRANSLATIONS = {
         "sidebar_fan": "Contrôle des Sorties",
         "sidebar_sec": "Paramètres de Sécurité",
         "sidebar_osd": "Configuration OSD",
-        "sec_title": "🛡️ Paramètres de Sécurité (Fail-Safe)",
+        "sec_title": "Paramètres de Sécurité (Fail-Safe)",
         "sec_info": "Configurez des paramètres d'urgence indépendants pour chaque sortie. Garantit l'intégrité du système en intervenant automatiquement en cas d'usure matérielle, d'anomalies hydrauliques ou de baisses de performances critiques.",
         "sec_rpm": "Alarme de rotation (seuil critique ≤) :",
         "sec_temp": "Alarme de température (seuil critique ≥) :",
@@ -383,7 +380,7 @@ TRANSLATIONS = {
         "sec_saved_msg": "Paramètres d'urgence sauvegardés avec succès.",
         "osd_title": "🖥️ Configuration OSD",
         "osd_info": "Sélectionnez les capteurs à afficher en superposition et attribuez-leur un nom personnalisé. Tous les capteurs ont été détectés automatiquement.",
-        "osd_hotkey": "💡 <b>Activation Rapide en Jeu (HotKey) :</b><br>Pour afficher/masquer ou déplacer l'OSD en jeu, utilisez les outils de votre distribution.<br>Créez deux raccourcis clavier (ex. <b>F12</b> et <b>F2</b>) et associez-les à ces commandes :<br>▶ Afficher/Masquer : <code>openaquaero --toggle-osd</code><br>▶ Déplacer la position OSD : <code>openaquaero --cycle-position</code>",
+        "osd_hotkey": "💡 <b>Positionnement Libre:</b><br>L'OSD peut être déplacé librement sur le bureau en le faisant glisser avec la souris. La position est enregistrée automatiquement.",
         "osd_global": "Paramètres Globaux OSD",
         "osd_show": "Afficher le Panneau OSD",
         "osd_scale": "   Échelle de l'Interface :",
@@ -461,7 +458,7 @@ TRANSLATIONS = {
         "sidebar_fan": "Control de Salidas",
         "sidebar_sec": "Configuración de Seguridad",
         "sidebar_osd": "Configuración OSD",
-        "sec_title": "🛡️ Configuración de Seguridad (Fail-Safe)",
+        "sec_title": "Configuración de Seguridad (Fail-Safe)",
         "sec_info": "Configura parámetros de emergencia independientes para cada salida. Garantiza la integridad del sistema interviniendo automáticamente en caso de desgaste del hardware, anomalías hidráulicas o caídas críticas de rendimiento.",
         "sec_rpm": "Alarma de rotación (umbral crítico ≤):",
         "sec_temp": "Alarma de temperatura (umbral crítico ≥):",
@@ -474,7 +471,7 @@ TRANSLATIONS = {
         "sec_saved_msg": "Configuración de emergencia guardada con éxito.",
         "osd_title": "🖥️ Configuración OSD",
         "osd_info": "Selecciona qué sensores mostrar en la superposición y asígnales un nombre personalizado. Todos los sensores han sido detectados automáticamente.",
-        "osd_hotkey": "💡 <b>Activación Rápida en Juego (HotKey):</b><br>Para mostrar/ocultar o mover el OSD en el juego, usa las herramientas de tu distribución.<br>Crea dos atajos de teclado (ej. <b>F12</b> y <b>F2</b>) y asígnalos a estos comandos:<br>▶ Mostrar/Ocultar: <code>openaquaero --toggle-osd</code><br>▶ Mover posición OSD: <code>openaquaero --cycle-position</code>",
+        "osd_hotkey": "💡 <b>Posicionamiento Libre:</b><br>El OSD se puede mover libremente por el escritorio arrastrándolo con el ratón. La posición se guarda automáticamente.",
         "osd_global": "Configuración Global OSD",
         "osd_show": "Mostrar Panel OSD",
         "osd_scale": "   Escala de Interfaz:",
@@ -508,7 +505,7 @@ TRANSLATIONS = {
         "dialog_del_msg": "¿Estás seguro de que deseas eliminar el perfil '{p}'?",
         "dialog_warn_title": "Advertencia",
         "dialog_warn_default": "Sobrescribe el perfil 'Default' haciendo clic en el icono de guardar a la izquierda.",
-        "dialog_ren_title": "Renombrar",
+        "dialog_ren_title": "Renommer",
         "dialog_ren_msg": "Nuevo nombre:",
         "alarm_critical_title": "🚨 ALARMA CRÍTICA DE HARDWARE 🚨",
         "alarm_cancel_exec": "CANCELAR EJECUCIÓN ({s}s)",
@@ -518,12 +515,9 @@ TRANSLATIONS = {
 }
 
 def T(key):
-    """Restituisce la stringa tradotta in base alla lingua impostata in configurazione."""
     lang = global_config.get("lang", "it")
     return TRANSLATIONS.get(lang, TRANSLATIONS["it"]).get(key, key)
 
-# Definizione del foglio di stile globale Qt. L'architettura visiva si affida
-# ad un singolo colore di accento (#00e5ff) su sfondi scuri desaturati per ottimizzare il contrasto.
 MODERN_STYLE = """
 QMainWindow { background-color: #11111b; }
 QWidget { color: #cdd6f4; font-family: system-ui, 'Inter', 'Noto Sans', sans-serif; }
@@ -551,34 +545,7 @@ QListWidget#Sidebar::item { padding: 15px 0px; border-bottom: 1px solid #181825;
 QListWidget#Sidebar::item:selected { background-color: #1e1e2e; border-left: 4px solid #00e5ff; }
 """
 
-# --- MODULO IPC (Inter-Process Communication) ---
-# Implementazione basata su QLocalSocket necessaria per bypassare le restrizioni 
-# dei compositor moderni (es. Wayland) sui keylogger globali. Permette al DE
-# di inviare parametri all'istanza in esecuzione.
-def send_remote_command(command):
-    socket = QLocalSocket()
-    socket.connectToServer("OpenAquaero_Server")
-    if socket.waitForConnected(500):
-        socket.write(command.encode())
-        socket.waitForBytesWritten(500)
-        return True
-    return False
-
-class CommandServer(QLocalServer):
-    command_received = Signal(str)
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.newConnection.connect(self.handle_connection)
-    def handle_connection(self):
-        socket = self.nextPendingConnection()
-        if socket.waitForReadyRead(500):
-            command = socket.readAll().data().decode()
-            self.command_received.emit(command)
-            socket.disconnectFromServer()
-# ---------------------------------------------------
-
 class HardwareWorker(QThread):
-    """Worker in background per l'interrogazione hardware asincrona e calcolo termico."""
     telemetry_ready = Signal(dict)
     def __init__(self, engine):
         super().__init__()
@@ -624,21 +591,28 @@ class CurveVisualizer(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         w = self.width(); h = self.height()
-        
+
         bg_color = QColor("#11111b") if self.isEnabled() else QColor("#181825")
         painter.fillRect(0, 0, w, h, bg_color)
-        
+
         margin_x = 35; margin_y = 25
         graph_w = w - (margin_x * 2); graph_h = h - (margin_y * 2)
-        
-        painter.setPen(QPen(QColor("#45475a"), 1, Qt.DashLine))
+
+        painter.setPen(QPen(QColor("#313244"), 1, Qt.SolidLine))
         painter.drawLine(margin_x, h - margin_y, w - margin_x, h - margin_y)
         painter.drawLine(margin_x, margin_y, margin_x, h - margin_y)
 
-        vis_t_min = 10.0; vis_t_max = 100.0
+        vis_t_min = float(self.t_min)
+        vis_t_max = float(self.t_max)
+        if vis_t_max <= vis_t_min: vis_t_max = vis_t_min + 1.0
+
+        vis_p_min = float(self.p_min)
+        vis_p_max = float(self.p_max)
+        if vis_p_max <= vis_p_min: vis_p_max = vis_p_min + 1.0
+
         polygon = QPolygonF()
         polygon.append(QPointF(margin_x, h - margin_y))
-        
+
         for i in range(51):
             temp_step = vis_t_min + (i / 50.0) * (vis_t_max - vis_t_min)
             if temp_step <= self.t_min: pwm = self.p_min
@@ -647,35 +621,89 @@ class CurveVisualizer(QWidget):
                 if self.t_max == self.t_min: t_norm = 1.0
                 else: t_norm = (temp_step - self.t_min) / (self.t_max - self.t_min)
                 pwm = self.p_min + (self.p_max - self.p_min) * pow(t_norm, self.gamma)
-            
+
             x = margin_x + ((temp_step - vis_t_min) / (vis_t_max - vis_t_min)) * graph_w
-            y = (h - margin_y) - ((pwm / 100.0) * graph_h)
+            p_norm = (pwm - vis_p_min) / (vis_p_max - vis_p_min)
+            y = (h - margin_y) - (p_norm * graph_h)
             polygon.append(QPointF(x, y))
-            
+
         polygon.append(QPointF(w - margin_x, h - margin_y))
-        
+
         painter.setPen(Qt.NoPen)
         brush_color = QColor("#00e5ff") if self.isEnabled() else QColor("#45475a")
         brush_color.setAlpha(40)
         painter.setBrush(QBrush(brush_color))
         painter.drawPolygon(polygon)
-        
+
         pen_color = QColor("#00e5ff") if self.isEnabled() else QColor("#555555")
         painter.setPen(QPen(pen_color, 3))
         painter.setBrush(Qt.NoBrush)
         painter.drawPolyline(polygon.mid(1, 51))
 
-        painter.setPen(QPen(QColor("#a6adc8"), 1))
-        font = painter.font(); font.setPointSize(8); painter.setFont(font)
-        painter.drawText(5, h - margin_y + 4, "0%")
-        painter.drawText(5, margin_y + 4, "100%")
-        painter.drawText(margin_x - 10, h - 5, "10°C")
-        painter.drawText(w - margin_x - 15, h - 5, "100°C")
+        painter.setPen(QPen(QColor("#6c7086"), 1))
+        font = painter.font(); font.setPointSize(8); font.setBold(False); painter.setFont(font)
 
-        if self.isEnabled() and vis_t_min <= self.current_temp <= vis_t_max:
-            x_temp = margin_x + ((self.current_temp - vis_t_min) / (vis_t_max - vis_t_min)) * graph_w
-            painter.setPen(QPen(QColor("#00e5ff"), 2, Qt.DashLine))
-            painter.drawLine(int(x_temp), margin_y, int(x_temp), h - margin_y)
+        painter.drawText(5, h - margin_y + 4, f"{int(vis_p_min)}%")
+        painter.drawText(5, margin_y + 4, f"{int(vis_p_max)}%")
+        painter.drawText(margin_x - 15, h - 5, f"{int(vis_t_min)}°C")
+        painter.drawText(w - margin_x - 20, h - 5, f"{int(vis_t_max)}°C")
+
+        if self.isEnabled() and self.current_temp > 0.0:
+            font.setPointSize(9); font.setBold(True); painter.setFont(font)
+
+            if self.current_temp < vis_t_min:
+                x_pos = margin_x
+                painter.setPen(QPen(QColor("#a6adc8"), 2, Qt.DashLine))
+                painter.drawLine(int(x_pos), margin_y, int(x_pos), h - margin_y)
+                painter.drawText(int(x_pos) + 8, margin_y + 12, f"< {int(vis_t_min)}°C (Attuale: {self.current_temp:.1f}°C)")
+
+            elif self.current_temp > vis_t_max:
+                x_pos = w - margin_x
+                painter.setPen(QPen(QColor("#ff3333"), 2, Qt.DashLine))
+                painter.drawLine(int(x_pos), margin_y, int(x_pos), h - margin_y)
+                text = f"> {int(vis_t_max)}°C (Attuale: {self.current_temp:.1f}°C)"
+                tw = painter.fontMetrics().horizontalAdvance(text)
+                painter.drawText(int(x_pos) - tw - 8, margin_y + 12, text)
+
+            else:
+                x_temp = margin_x + ((self.current_temp - vis_t_min) / (vis_t_max - vis_t_min)) * graph_w
+
+                if self.t_max == self.t_min: t_norm = 1.0
+                else: t_norm = (self.current_temp - self.t_min) / (self.t_max - self.t_min)
+                pwm = self.p_min + (self.p_max - self.p_min) * pow(t_norm, self.gamma)
+
+                p_norm = (pwm - vis_p_min) / (vis_p_max - vis_p_min)
+                y_pwm = (h - margin_y) - (p_norm * graph_h)
+
+                painter.setPen(QPen(QColor("#a6adc8"), 1, Qt.DashLine))
+                painter.drawLine(margin_x, int(y_pwm), int(x_temp), int(y_pwm)) 
+                painter.drawLine(int(x_temp), int(y_pwm), int(x_temp), h - margin_y) 
+
+                painter.setPen(Qt.NoPen)
+                painter.setBrush(QBrush(QColor("#00e5ff")))
+                painter.drawEllipse(QPointF(x_temp, y_pwm), 4, 4)
+
+                tooltip_text = f"{self.current_temp:.1f}°C | {int(pwm)}%"
+                font.setPointSize(9); font.setBold(True); painter.setFont(font)
+                metrics = painter.fontMetrics()
+                tw = metrics.horizontalAdvance(tooltip_text)
+                th = metrics.height()
+
+                tx = x_temp + 10
+                ty = y_pwm - 10 - th
+
+                if tx + tw + 10 > w:
+                    tx = x_temp - tw - 10
+                if ty < 5:
+                    ty = y_pwm + 15
+
+                painter.setPen(QPen(QColor("#45475a"), 1))
+                painter.setBrush(QBrush(QColor("#1e1e2e")))
+                painter.drawRoundedRect(QRectF(tx - 4, ty - 2, tw + 8, th + 4), 4, 4)
+
+                painter.setPen(QColor("#cdd6f4"))
+                painter.drawText(int(tx), int(ty + th - 3), tooltip_text)
+
 
 class InteractiveCurveWidget(QWidget):
     """Componente grafico per la manipolazione interattiva a nodi (interpolazione lineare)."""
@@ -697,16 +725,16 @@ class InteractiveCurveWidget(QWidget):
     def t_to_x(self, t):
         w = self.width() - (self.margin_x * 2)
         return self.margin_x + ((t - self.MIN_T) / (self.MAX_T - self.MIN_T)) * w
-        
+
     def p_to_y(self, p):
         h = self.height() - (self.margin_y * 2)
         return (self.height() - self.margin_y) - ((p - self.MIN_P) / (self.MAX_P - self.MIN_P)) * h
-        
+
     def x_to_t(self, x):
         w = self.width() - (self.margin_x * 2)
         val = self.MIN_T + ((x - self.margin_x) / w) * (self.MAX_T - self.MIN_T)
         return max(self.MIN_T, min(self.MAX_T, val))
-        
+
     def y_to_p(self, y):
         h = self.height() - (self.margin_y * 2)
         val = self.MIN_P + (((self.height() - self.margin_y) - y) / h) * (self.MAX_P - self.MIN_P)
@@ -739,20 +767,20 @@ class InteractiveCurveWidget(QWidget):
             if (pos.x() - x)**2 + (pos.y() - y)**2 < 100:
                 hovered = i
                 break
-                
+
         if hovered != self.hover_idx:
             self.hover_idx = hovered
             self.update()
-            
+
         if self.dragging_idx >= 0:
             raw_t = self.x_to_t(pos.x()); raw_p = self.y_to_p(pos.y())
             new_t = round(raw_t * 2) / 2.0; new_p = round(raw_p * 2) / 2.0
-            
+
             min_t_bound = self.MIN_T if self.dragging_idx == 0 else self.points[self.dragging_idx-1][0] + 0.1
             max_t_bound = self.MAX_T if self.dragging_idx == len(self.points)-1 else self.points[self.dragging_idx+1][0] - 0.1
             safe_t = max(min_t_bound, min(max_t_bound, new_t))
             safe_p = max(self.MIN_P, min(self.MAX_P, new_p))
-            
+
             self.points[self.dragging_idx] = [safe_t, safe_p]
             self.node_selected.emit(safe_t, safe_p)
             self.curve_changed.emit()
@@ -793,20 +821,20 @@ class InteractiveCurveWidget(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         w = self.width(); h = self.height()
-        
+
         bg_color = QColor("#11111b") if self.isEnabled() else QColor("#181825")
         painter.fillRect(0, 0, w, h, bg_color)
-        
+
         graph_w = w - (self.margin_x * 2); graph_h = h - (self.margin_y * 2)
-        
-        painter.setPen(QPen(QColor("#313244"), 1, Qt.DashLine))
+
+        painter.setPen(QPen(QColor("#313244"), 1, Qt.SolidLine))
         painter.drawLine(self.margin_x, h - self.margin_y, w - self.margin_x, h - self.margin_y)
         painter.drawLine(self.margin_x, self.margin_y, self.margin_x, h - self.margin_y)
 
-        painter.setPen(QPen(QColor("#a6adc8"), 1))
+        painter.setPen(QPen(QColor("#6c7086"), 1))
         font = painter.font(); font.setPointSize(8); painter.setFont(font)
-        painter.drawText(5, h - self.margin_y + 4, "0%")
-        painter.drawText(5, self.margin_y + 4, "100%")
+        painter.drawText(5, h - self.margin_y + 4, f"{int(self.MIN_P)}%")
+        painter.drawText(5, self.margin_y + 4, f"{int(self.MAX_P)}%")
         painter.drawText(self.margin_x - 10, h - 5, f"{int(self.MIN_T)}°C")
         painter.drawText(w - self.margin_x - 10, h - 5, f"{int(self.MAX_T)}°C")
 
@@ -816,7 +844,7 @@ class InteractiveCurveWidget(QWidget):
             for t, p in self.points:
                 polygon.append(QPointF(self.t_to_x(t), self.p_to_y(p)))
             polygon.append(QPointF(self.t_to_x(self.points[-1][0]), h - self.margin_y))
-            
+
             brush_color = QColor("#00e5ff") if self.isEnabled() else QColor("#45475a")
             brush_color.setAlpha(30)
             painter.setPen(Qt.NoPen)
@@ -826,32 +854,71 @@ class InteractiveCurveWidget(QWidget):
         pen_color = QColor("#00e5ff") if self.isEnabled() else QColor("#555555")
         painter.setPen(QPen(pen_color, 2))
         painter.setBrush(Qt.NoBrush)
-        
+
         for i in range(len(self.points) - 1):
             x1, y1 = self.t_to_x(self.points[i][0]), self.p_to_y(self.points[i][1])
             x2, y2 = self.t_to_x(self.points[i+1][0]), self.p_to_y(self.points[i+1][1])
             painter.drawLine(int(x1), int(y1), int(x2), int(y2))
 
-        if self.isEnabled() and self.MIN_T <= self.current_temp <= self.MAX_T:
-            curr_x = int(self.t_to_x(self.current_temp))
-            curr_y = int(self.p_to_y(self.current_pwm))
-            
-            painter.setPen(QPen(QColor("#00e5ff"), 1, Qt.DashLine))
-            painter.drawLine(curr_x, self.margin_y, curr_x, h - self.margin_y)
-            painter.drawLine(self.margin_x, curr_y, w - self.margin_x, curr_y)
-            
-            painter.setPen(Qt.NoPen)
-            painter.setBrush(QBrush(QColor("#00e5ff")))
-            painter.drawEllipse(QPointF(curr_x, curr_y), 4, 4)
+        if self.isEnabled() and self.current_temp > 0.0:
+            font.setPointSize(9); font.setBold(True); painter.setFont(font)
+
+            if self.current_temp < self.MIN_T:
+                x_pos = self.margin_x
+                painter.setPen(QPen(QColor("#a6adc8"), 2, Qt.DashLine))
+                painter.drawLine(int(x_pos), self.margin_y, int(x_pos), h - self.margin_y)
+                painter.drawText(int(x_pos) + 8, self.margin_y + 12, f"< {int(self.MIN_T)}°C (Attuale: {self.current_temp:.1f}°C)")
+
+            elif self.current_temp > self.MAX_T:
+                x_pos = w - self.margin_x
+                painter.setPen(QPen(QColor("#ff3333"), 2, Qt.DashLine))
+                painter.drawLine(int(x_pos), self.margin_y, int(x_pos), h - self.margin_y)
+                text = f"> {int(self.MAX_T)}°C (Attuale: {self.current_temp:.1f}°C)"
+                tw = painter.fontMetrics().horizontalAdvance(text)
+                painter.drawText(int(x_pos) - tw - 8, self.margin_y + 12, text)
+
+            else:
+                curr_x = int(self.t_to_x(self.current_temp))
+                curr_y = int(self.p_to_y(self.current_pwm))
+
+                painter.setPen(QPen(QColor("#a6adc8"), 1, Qt.DashLine))
+                painter.drawLine(self.margin_x, curr_y, curr_x, curr_y) 
+                painter.drawLine(curr_x, curr_y, curr_x, h - self.margin_y) 
+
+                painter.setPen(Qt.NoPen)
+                painter.setBrush(QBrush(QColor("#00e5ff")))
+                painter.drawEllipse(QPointF(curr_x, curr_y), 4, 4)
+
+                tooltip_text = f"{self.current_temp:.1f}°C | {int(self.current_pwm)}%"
+                font.setPointSize(9); font.setBold(True); painter.setFont(font)
+                metrics = painter.fontMetrics()
+                tw = metrics.horizontalAdvance(tooltip_text)
+                th = metrics.height()
+
+                tx = curr_x + 10
+                ty = curr_y - 10 - th
+
+                if tx + tw + 10 > w:
+                    tx = curr_x - tw - 10
+                if ty < 5:
+                    ty = curr_y + 15
+
+                painter.setPen(QPen(QColor("#00e5ff"), 1))
+                painter.setBrush(QBrush(QColor("#1e1e2e")))
+                painter.drawRoundedRect(QRectF(tx - 4, ty - 2, tw + 8, th + 4), 4, 4)
+
+                painter.setPen(QColor("#00e5ff"))
+                painter.drawText(int(tx), int(ty + th - 3), tooltip_text)
 
         if self.isEnabled():
+            font.setBold(False); painter.setFont(font)
             for i, (t, p) in enumerate(self.points):
                 x = self.t_to_x(t); y = self.p_to_y(p)
                 is_active = (i == self.dragging_idx or i == self.hover_idx or i == self.selected_idx)
-                
+
                 node_color = QColor("#ffffff") if is_active else QColor("#00e5ff")
                 r = 6 if is_active else 4
-                
+
                 painter.setPen(QPen(QColor("#1e1e2e"), 1))
                 painter.setBrush(QBrush(node_color))
                 painter.drawEllipse(QPointF(x, y), r, r)
@@ -864,22 +931,22 @@ class InteractiveCurveWidget(QWidget):
                     th = metrics.height()
                     tx = max(5, min(x - tw/2, w - tw - 5))
                     ty = y - r - th - 5
-                    
+
                     painter.setPen(Qt.NoPen)
                     painter.setBrush(QBrush(QColor("#00e5ff")))
                     painter.drawRoundedRect(QRectF(tx - 4, ty - 2, tw + 8, th + 4), 3, 3)
-                    
+
                     painter.setPen(QPen(QColor("#11111b")))
                     painter.drawText(int(tx), int(ty + th - 3), tooltip_text)
 
 class ChannelControlWidget(QGroupBox):
-    """Componente UI per il controllo logico e visivo del singolo canale hardware PWM."""
+    """Componente UI per il controllo logico e visivo del singolo canale hardware"""
     def __init__(self, channel_id, engine, parent=None):
         super().__init__("", parent)
         self.channel_id = channel_id
         self.engine = engine
         self.last_known_temp = 0.0
-        self.temp_history = [] 
+        self.temp_history = []
         self.init_ui()
 
     def init_ui(self):
@@ -888,14 +955,14 @@ class ChannelControlWidget(QGroupBox):
         title_layout = QHBoxLayout()
         lbl_ch = QLabel(f"{T('channel')} {self.channel_id} |")
         lbl_ch.setStyleSheet("font-size: 18px; color: #a6adc8;")
-        
+
         self.edit_name = QLineEdit()
         self.edit_name.setStyleSheet("font-size: 18px; border: none; background: transparent; color: #00e5ff; font-weight: bold;")
-        
+
         saved_name = global_config["channels_names"].get(str(self.channel_id), T("unnamed_hw"))
         self.edit_name.setText(saved_name)
         self.edit_name.editingFinished.connect(self.save_channel_name)
-        
+
         title_layout.addWidget(lbl_ch); title_layout.addWidget(self.edit_name)
         main_layout.addLayout(title_layout)
 
@@ -904,27 +971,27 @@ class ChannelControlWidget(QGroupBox):
 
         top_layout = QHBoxLayout()
         status_layout = QVBoxLayout()
-        
+
         self.lbl_temp = QLabel("Temp: -- °C")
         self.lbl_temp.setStyleSheet("color: #cdd6f4; font-size: 15px; font-weight: bold;")
         self.lbl_pwm = QLabel("Power: -- %")
         self.lbl_pwm.setStyleSheet("color: #a6adc8; font-size: 15px;")
         self.lbl_rpm = QLabel("Speed: -- RPM")
         self.lbl_rpm.setStyleSheet("color: #a6adc8; font-size: 15px;")
-        
+
         status_layout.addWidget(self.lbl_temp); status_layout.addWidget(self.lbl_pwm); status_layout.addWidget(self.lbl_rpm)
         top_layout.addLayout(status_layout)
 
         setup_layout = QFormLayout()
         sensor_box = QHBoxLayout()
-        
+
         self.combo_sensors = QComboBox()
         self.refresh_sensors()
-        
+
         self.btn_rename_sensor = QPushButton("✎")
         self.btn_rename_sensor.setFixedWidth(35)
         self.btn_rename_sensor.clicked.connect(self.rename_current_sensor)
-        
+
         sensor_box.addWidget(self.combo_sensors); sensor_box.addWidget(self.btn_rename_sensor)
         self.lbl_sensor_title = QLabel(T("sensor"))
         setup_layout.addRow(self.lbl_sensor_title, sensor_box)
@@ -932,17 +999,17 @@ class ChannelControlWidget(QGroupBox):
         hyst_layout = QHBoxLayout()
         self.chk_hysteresis = QCheckBox(T("hysteresis"))
         self.chk_hysteresis.setStyleSheet("font-size: 12px; font-weight: normal;")
-        
-        self.spin_hysteresis = QDoubleSpinBox() 
+
+        self.spin_hysteresis = QDoubleSpinBox()
         self.spin_hysteresis.setDecimals(0)
         self.spin_hysteresis.setRange(2, 60)
         self.spin_hysteresis.setValue(5)
         self.spin_hysteresis.setSuffix(" sec")
         self.spin_hysteresis.setEnabled(False)
-        
+
         self.chk_hysteresis.toggled.connect(self.spin_hysteresis.setEnabled)
-        self.chk_hysteresis.toggled.connect(lambda: self.temp_history.clear()) 
-        
+        self.chk_hysteresis.toggled.connect(lambda: self.temp_history.clear())
+
         hyst_layout.addWidget(self.chk_hysteresis)
         hyst_layout.addWidget(self.spin_hysteresis)
         hyst_layout.addStretch()
@@ -953,11 +1020,11 @@ class ChannelControlWidget(QGroupBox):
         self.radio_manual = QRadioButton(T("mode_manual"))
         self.radio_fixed = QRadioButton(T("fixed"))
         self.radio_auto.setChecked(True)
-        
+
         radio_layout.addWidget(self.radio_auto)
         radio_layout.addWidget(self.radio_manual)
         radio_layout.addWidget(self.radio_fixed)
-        
+
         self.radio_auto.toggled.connect(self.update_ui_mode)
         self.radio_manual.toggled.connect(self.update_ui_mode)
         self.radio_fixed.toggled.connect(self.update_ui_mode)
@@ -969,10 +1036,21 @@ class ChannelControlWidget(QGroupBox):
         self.box_auto = QWidget()
         auto_layout = QVBoxLayout(self.box_auto)
         auto_layout.setContentsMargins(0, 0, 0, 0)
+
         self.graph_auto = CurveVisualizer()
+        self.graph_auto.setMinimumHeight(280) 
         auto_layout.addWidget(self.graph_auto)
 
-        slider_layout = QFormLayout()
+        self.btn_toggle_auto = QPushButton()
+        self.btn_toggle_auto.setStyleSheet("text-align: left; background: transparent; border: none; color: #00e5ff; font-weight: bold; padding: 5px 0; font-size: 14px;")
+        self.btn_toggle_auto.setCursor(Qt.PointingHandCursor)
+        self.btn_toggle_auto.clicked.connect(self.toggle_auto_controls)
+        auto_layout.addWidget(self.btn_toggle_auto)
+
+        self.container_auto_controls = QWidget()
+        slider_layout = QFormLayout(self.container_auto_controls)
+        slider_layout.setContentsMargins(0, 5, 0, 0)
+
         self.slider_t_min = self.create_slider(10, 100, 35); self.val_t_min = QLabel("35 °C")
         self.slider_t_max = self.create_slider(10, 100, 45); self.val_t_max = QLabel("45 °C")
         self.slider_p_min = self.create_slider(0, 100, 0); self.val_p_min = QLabel("0 %")
@@ -980,10 +1058,10 @@ class ChannelControlWidget(QGroupBox):
         self.slider_gamma = QSlider(Qt.Horizontal); self.slider_gamma.setRange(1, 30); self.slider_gamma.setValue(10)
         self.val_gamma = QLabel("1.0")
 
-        self.slider_t_min.valueChanged.connect(lambda v: (self.val_t_min.setText(f"{v} °C"), self.update_graph_auto()))
-        self.slider_t_max.valueChanged.connect(lambda v: (self.val_t_max.setText(f"{v} °C"), self.update_graph_auto()))
-        self.slider_p_min.valueChanged.connect(lambda v: (self.val_p_min.setText(f"{v} %"), self.update_graph_auto()))
-        self.slider_p_max.valueChanged.connect(lambda v: (self.val_p_max.setText(f"{v} %"), self.update_graph_auto()))
+        self.slider_t_min.valueChanged.connect(lambda v: (self.val_t_min.setText(f"{v} °C"), self.update_graph_auto(), self.update_auto_toggle_text()))
+        self.slider_t_max.valueChanged.connect(lambda v: (self.val_t_max.setText(f"{v} °C"), self.update_graph_auto(), self.update_auto_toggle_text()))
+        self.slider_p_min.valueChanged.connect(lambda v: (self.val_p_min.setText(f"{v} %"), self.update_graph_auto(), self.update_auto_toggle_text()))
+        self.slider_p_max.valueChanged.connect(lambda v: (self.val_p_max.setText(f"{v} %"), self.update_graph_auto(), self.update_auto_toggle_text()))
         self.slider_gamma.valueChanged.connect(lambda v: (self.val_gamma.setText(f"{v/10.0}"), self.update_graph_auto()))
 
         slider_layout.addRow(QLabel(T("t_min")), self.make_row(self.slider_t_min, self.val_t_min))
@@ -991,41 +1069,87 @@ class ChannelControlWidget(QGroupBox):
         slider_layout.addRow(QLabel(T("p_min")), self.make_row(self.slider_p_min, self.val_p_min))
         slider_layout.addRow(QLabel(T("p_max")), self.make_row(self.slider_p_max, self.val_p_max))
         slider_layout.addRow(QLabel(T("gamma")), self.make_row(self.slider_gamma, self.val_gamma))
-        auto_layout.addLayout(slider_layout)
+
+        auto_layout.addWidget(self.container_auto_controls)
+        self.container_auto_controls.hide()
+        self.update_auto_toggle_text()
+
         main_layout.addWidget(self.box_auto)
 
         self.box_manual = QWidget()
         manual_layout = QVBoxLayout(self.box_manual)
         manual_layout.setContentsMargins(0, 0, 0, 0)
+
         self.graph_manual = InteractiveCurveWidget()
+        self.graph_manual.setMinimumHeight(280)
         manual_layout.addWidget(self.graph_manual)
+
         lbl_tip = QLabel(T("curve_tip"))
         lbl_tip.setStyleSheet("color: #6c7086; font-size: 11px;")
         lbl_tip.setAlignment(Qt.AlignCenter)
         manual_layout.addWidget(lbl_tip)
 
+        self.btn_toggle_manual = QPushButton()
+        self.btn_toggle_manual.setStyleSheet("text-align: left; background: transparent; border: none; color: #00e5ff; font-weight: bold; padding: 5px 0; font-size: 14px;")
+        self.btn_toggle_manual.setCursor(Qt.PointingHandCursor)
+        self.btn_toggle_manual.clicked.connect(self.toggle_manual_controls)
+        manual_layout.addWidget(self.btn_toggle_manual)
+
+        self.container_manual_controls = QWidget()
+        manual_controls_layout = QVBoxLayout(self.container_manual_controls)
+        manual_controls_layout.setContentsMargins(0, 5, 0, 0)
+
+        scale_layout = QHBoxLayout()
+        lbl_scale = QLabel("Visualizzazione Asse X:")
+        lbl_scale.setStyleSheet("color: #a6adc8; font-size: 12px; font-weight: bold;")
+        self.spin_scale_min = QSpinBox()
+        self.spin_scale_min.setRange(0, 150)
+        self.spin_scale_min.setValue(10)
+        self.spin_scale_min.setSuffix(" °C")
+        self.spin_scale_max = QSpinBox()
+        self.spin_scale_max.setRange(10, 200)
+        self.spin_scale_max.setValue(100)
+        self.spin_scale_max.setSuffix(" °C")
+
+        scale_layout.addWidget(lbl_scale)
+        scale_layout.addWidget(self.spin_scale_min)
+        scale_layout.addWidget(QLabel(" - "))
+        scale_layout.addWidget(self.spin_scale_max)
+        scale_layout.addStretch()
+
+        self.spin_scale_min.valueChanged.connect(lambda v: (self.on_manual_scale_changed(), self.update_manual_toggle_text()))
+        self.spin_scale_max.valueChanged.connect(lambda v: (self.on_manual_scale_changed(), self.update_manual_toggle_text()))
+
+        manual_controls_layout.addLayout(scale_layout)
+
         self.box_node_edit = QWidget()
         node_layout = QHBoxLayout(self.box_node_edit)
-        node_layout.setContentsMargins(0, 0, 0, 0)
+        node_layout.setContentsMargins(0, 10, 0, 0)
         lbl_node_edit = QLabel("Punto Selezionato:")
         lbl_node_edit.setStyleSheet("color: #00e5ff;")
-        
+
         self.spin_temp = QDoubleSpinBox()
         self.spin_temp.setRange(10.0, 100.0)
         self.spin_temp.setDecimals(1)
         self.spin_temp.setSingleStep(0.1)
         self.spin_temp.setSuffix(" °C")
-        
+
         self.spin_pwm = QDoubleSpinBox()
         self.spin_pwm.setRange(0.0, 100.0)
         self.spin_pwm.setDecimals(1)
         self.spin_pwm.setSingleStep(0.1)
         self.spin_pwm.setSuffix(" %")
-        
+
         node_layout.addWidget(lbl_node_edit)
         node_layout.addWidget(self.spin_temp)
         node_layout.addWidget(self.spin_pwm)
-        manual_layout.addWidget(self.box_node_edit)
+        node_layout.addStretch()
+
+        manual_controls_layout.addWidget(self.box_node_edit)
+
+        manual_layout.addWidget(self.container_manual_controls)
+        self.container_manual_controls.hide()
+        self.update_manual_toggle_text()
 
         self.graph_manual.node_selected.connect(self.on_node_selected)
         self.spin_temp.valueChanged.connect(self.on_spinbox_changed)
@@ -1037,14 +1161,14 @@ class ChannelControlWidget(QGroupBox):
         fixed_layout.setContentsMargins(0, 5, 0, 0)
         lbl_p_fixed = QLabel(T("p_fixed"))
         lbl_p_fixed.setFixedWidth(100)
-        
+
         self.slider_p_fixed = QSlider(Qt.Horizontal)
         self.slider_p_fixed.setRange(0, 100)
         self.slider_p_fixed.setValue(100)
         self.val_p_fixed = QLabel("100 %")
         self.val_p_fixed.setFixedWidth(45)
         self.slider_p_fixed.valueChanged.connect(lambda v: self.val_p_fixed.setText(f"{v} %"))
-        
+
         fixed_layout.addWidget(lbl_p_fixed)
         fixed_layout.addWidget(self.slider_p_fixed)
         fixed_layout.addWidget(self.val_p_fixed)
@@ -1052,6 +1176,42 @@ class ChannelControlWidget(QGroupBox):
 
         self.update_graph_auto()
         self.update_ui_mode()
+
+    def toggle_auto_controls(self):
+        is_visible = self.container_auto_controls.isVisible()
+        self.container_auto_controls.setVisible(not is_visible)
+        self.update_auto_toggle_text()
+
+    def update_auto_toggle_text(self):
+        if self.container_auto_controls.isVisible():
+            self.btn_toggle_auto.setText("▼ Nascondi Parametri Curva")
+        else:
+            t_m = self.slider_t_min.value()
+            t_M = self.slider_t_max.value()
+            p_m = self.slider_p_min.value()
+            p_M = self.slider_p_max.value()
+            self.btn_toggle_auto.setText(f"▶ Parametri Curva (TMP: {t_m}-{t_M} °C  |  PWR: {p_m}-{p_M} %)")
+
+    def toggle_manual_controls(self):
+        is_visible = self.container_manual_controls.isVisible()
+        self.container_manual_controls.setVisible(not is_visible)
+        self.update_manual_toggle_text()
+
+    def update_manual_toggle_text(self):
+        if self.container_manual_controls.isVisible():
+            self.btn_toggle_manual.setText("▼ Nascondi Controlli e Scala Asse X")
+        else:
+            min_x = self.spin_scale_min.value()
+            max_x = self.spin_scale_max.value()
+            self.btn_toggle_manual.setText(f"▶ Scala Asse X ({min_x}-{max_x} °C) e Modifica Nodi")
+
+    def on_manual_scale_changed(self):
+        min_v = self.spin_scale_min.value()
+        max_v = self.spin_scale_max.value()
+        if min_v >= max_v: return
+        self.graph_manual.MIN_T = min_v
+        self.graph_manual.MAX_T = max_v
+        self.graph_manual.update()
 
     def create_slider(self, min_v, max_v, def_v):
         s = QSlider(Qt.Horizontal)
@@ -1069,6 +1229,9 @@ class ChannelControlWidget(QGroupBox):
         return container
 
     def on_node_selected(self, temp, pwm):
+        if not self.container_manual_controls.isVisible():
+            self.toggle_manual_controls()
+
         self.box_node_edit.show()
         self.spin_temp.blockSignals(True)
         self.spin_pwm.blockSignals(True)
@@ -1101,7 +1264,9 @@ class ChannelControlWidget(QGroupBox):
             "p_max": self.slider_p_max.value(),
             "gamma": self.slider_gamma.value(),
             "points": self.graph_manual.points,
-            "p_fixed": self.slider_p_fixed.value()
+            "p_fixed": self.slider_p_fixed.value(),
+            "m_scale_min": self.spin_scale_min.value(),
+            "m_scale_max": self.spin_scale_max.value()
         }
 
     def set_state(self, state_dict):
@@ -1125,17 +1290,32 @@ class ChannelControlWidget(QGroupBox):
         self.slider_p_min.setValue(state_dict.get("p_min", 0))
         self.slider_p_max.setValue(state_dict.get("p_max", 100))
         self.slider_gamma.setValue(state_dict.get("gamma", 10))
-        
+
+        m_scale_min = state_dict.get("m_scale_min", 10)
+        m_scale_max = state_dict.get("m_scale_max", 100)
+        self.spin_scale_min.blockSignals(True)
+        self.spin_scale_max.blockSignals(True)
+        self.spin_scale_min.setValue(m_scale_min)
+        self.spin_scale_max.setValue(m_scale_max)
+        self.spin_scale_min.blockSignals(False)
+        self.spin_scale_max.blockSignals(False)
+        self.graph_manual.MIN_T = m_scale_min
+        self.graph_manual.MAX_T = m_scale_max
+
         if "points" in state_dict:
             self.graph_manual.points = [list(p) for p in state_dict["points"]]
         else:
             self.graph_manual.points = [[25.0, 20.0], [45.0, 40.0], [70.0, 100.0]]
-            
+
         self.graph_manual.selected_idx = -1
         self.box_node_edit.hide()
         self.graph_auto.update()
         self.graph_manual.update()
         self.update_ui_mode()
+
+        self.update_auto_toggle_text()
+        self.update_manual_toggle_text()
+
         self.temp_history.clear()
 
     def update_ui_mode(self):
@@ -1181,7 +1361,6 @@ class ChannelControlWidget(QGroupBox):
             if index >= 0: self.combo_sensors.setCurrentIndex(index)
 
     def process_telemetry(self, temps_dict, rpms_dict, is_controlling):
-        """Elabora le metriche hardware in tempo reale per restituire i comandi PWM."""
         sensor_id = self.combo_sensors.currentData()
         raw_temp = temps_dict.get(sensor_id)
         rpm = rpms_dict.get(self.channel_id, 0)
@@ -1202,7 +1381,6 @@ class ChannelControlWidget(QGroupBox):
                 self.temp_history.clear()
                 working_temp = raw_temp
 
-        # Aggiornamento UI Temperatura (Identico per Curve e Regime Fisso)
         if working_temp is not None:
             self.last_known_temp = working_temp
             self.lbl_temp.setText(f"Temp: {working_temp:.1f} °C")
@@ -1297,7 +1475,7 @@ class SecurityTabWidget(QWidget):
         super().__init__(parent)
         layout = QVBoxLayout(self)
 
-        lbl_title = QLabel(T("sec_title"))
+        lbl_title = QLabel(f"\u2622\uFE0E {T('sec_title')}")
         lbl_title.setStyleSheet("font-size: 20px; color: #ff3333; font-weight: bold; margin-bottom: 10px;")
         layout.addWidget(lbl_title)
 
@@ -1518,10 +1696,6 @@ class OSDConfigTabWidget(QWidget):
         info_txt.setStyleSheet("color: #a6adc8; margin-bottom: 5px; font-size: 13px;")
         layout.addWidget(info_txt)
 
-        hotkey_info = QLabel(T("osd_hotkey"))
-        hotkey_info.setStyleSheet("background-color: #313244; color: #cdd6f4; padding: 10px; border-radius: 5px; font-size: 12px; margin-bottom: 10px;")
-        layout.addWidget(hotkey_info)
-
         global_group = QGroupBox(T("osd_global"))
         g_layout = QHBoxLayout(global_group)
 
@@ -1669,8 +1843,6 @@ class OSDConfigTabWidget(QWidget):
         if color.isValid():
             hex_c = color.name()
             conf = global_config.get("osd_config", {})
-
-            # Applica il colore selezionato alla preview quadrata a fianco del bottone
             style_preview = f"background-color: {hex_c}; border: 1px solid #45475a; border-radius: 4px;"
 
             if target == "c_names":
@@ -1832,8 +2004,9 @@ class OpenAquaeroUI(QMainWindow):
         item_fan.setTextAlignment(Qt.AlignCenter)
         item_fan.setToolTip(T("sidebar_fan"))
 
-        item_sec = QListWidgetItem("🛡️") # O l'icona che hai scelto
-        item_sec.setFont(QFont("Arial", 22))
+
+        item_sec = QListWidgetItem("\u2622\uFE0E")
+        item_sec.setFont(QFont("Arial", 22, QFont.Bold))
         item_sec.setTextAlignment(Qt.AlignCenter)
         item_sec.setToolTip(T("sidebar_sec"))
         item_sec.setForeground(QColor("#ff3333"))
@@ -1894,61 +2067,6 @@ class OpenAquaeroUI(QMainWindow):
         self.dirty_timer = QTimer(self)
         self.dirty_timer.timeout.connect(self.check_dirty_state)
         self.dirty_timer.start(500)
-
-    # --- METODI IPC ---
-    def setup_command_server(self):
-        self.server = CommandServer(self)
-        QLocalServer.removeServer("OpenAquaero_Server")
-        self.server.listen("OpenAquaero_Server")
-        self.server.command_received.connect(self.handle_external_command)
-
-    def handle_external_command(self, cmd):
-        if cmd == "--toggle-osd":
-            self.toggle_osd_from_tray()
-        elif cmd == "--cycle-position":
-            self.cycle_osd_position()
-
-    def cycle_osd_position(self):
-        current_pos = global_config["osd_config"].get("position_index", 0)
-        new_pos = (current_pos + 1) % 9
-        global_config["osd_config"]["position_index"] = new_pos
-        save_config(global_config)
-
-        if self.osd_window.isVisible():
-            # Il layout manager di Qt muoverà il widget internamente in modo fluido,
-            # eliminando del tutto la necessità di fare hide() e show() (Zero Flickering).
-            self.update_osd_position(force=True)
-
-    def update_osd_position(self, force=False):
-        if not self.osd_window.isVisible() and not force: return
-
-        pos_idx = global_config["osd_config"].get("position_index", 0)
-
-        # Matrice di allineamento Qt: La soluzione definitiva per Wayland/X11.
-        # Deleghiamo a Qt l'allineamento del widget interno rispetto alla finestra fullscreen.
-        # I margini (10*s) impostati in osd_widget.py verranno rispettati automaticamente,
-        # garantendo una distanza dai bordi dello schermo perfetta ed elegante.
-        alignments = [
-            Qt.AlignTop | Qt.AlignLeft,       # 0
-            Qt.AlignTop | Qt.AlignHCenter,    # 1
-            Qt.AlignTop | Qt.AlignRight,      # 2
-            Qt.AlignVCenter | Qt.AlignLeft,   # 3
-            Qt.AlignVCenter | Qt.AlignHCenter,# 4
-            Qt.AlignVCenter | Qt.AlignRight,  # 5
-            Qt.AlignBottom | Qt.AlignLeft,    # 6
-            Qt.AlignBottom | Qt.AlignHCenter, # 7
-            Qt.AlignBottom | Qt.AlignRight    # 8
-        ]
-
-        screen = QApplication.primaryScreen().geometry()
-
-        # Estendiamo la superficie trasparente sull'intero schermo fisico
-        if self.osd_window.geometry() != screen:
-            self.osd_window.setGeometry(screen)
-
-        # Riposizioniamo istantaneamente l'interfaccia OSD
-        self.osd_window.layout.setAlignment(self.osd_window.bg_widget, alignments[pos_idx])
-    # ------------------------------------------
 
     def build_fan_control_ui(self):
         lbl_main_title = QLabel(T("fan_tab_title"))
@@ -2015,7 +2133,6 @@ class OpenAquaeroUI(QMainWindow):
         self.btn_master = QPushButton(T("suspend_btn"))
         self.btn_master.setCheckable(True)
         self.btn_master.setChecked(True)
-        # Stato di base coerente con il Verde Acqua principale
         self.btn_master.setStyleSheet("background-color: #00e5ff; color: #11111b; border: none; padding: 12px; font-size: 15px; font-weight: bold; border-radius: 6px;")
         self.btn_master.toggled.connect(self.toggle_master)
 
@@ -2038,12 +2155,13 @@ class OpenAquaeroUI(QMainWindow):
         autostart_layout.addWidget(self.chk_minimized)
 
         self.osd_window = AquaeroOSD()
+        self.osd_window.position_changed.connect(self.save_osd_position)
+        
         if global_config.get("osd_export", False):
             self.osd_window.show()
-            QTimer.singleShot(100, self.update_osd_position)
+            QTimer.singleShot(100, self.restore_osd_position)
 
         autoswitch_layout = QHBoxLayout()
-        # Modificato per collegarsi al dizionario
         self.chk_autoswitch = QCheckBox(T("autoswitch"))
         self.chk_autoswitch.setStyleSheet("font-size: 13px;")
         self.chk_autoswitch.setChecked(global_config.get("autoswitch_enabled", False))
@@ -2062,8 +2180,25 @@ class OpenAquaeroUI(QMainWindow):
         bottom_controls.addLayout(autostart_layout)
         self.main_layout.addLayout(bottom_controls)
 
+    def save_osd_position(self, x, y):
+        global_config.setdefault("osd_config", {})["pos_x"] = x
+        global_config["osd_config"]["pos_y"] = y
+        save_config(global_config)
+
+    def restore_osd_position(self):
+        pos_x = global_config.get("osd_config", {}).get("pos_x")
+        pos_y = global_config.get("osd_config", {}).get("pos_y")
+        screen = QApplication.primaryScreen().geometry()
+
+        if pos_x is not None and pos_y is not None:
+            if pos_x >= 0 and pos_y >= 0 and pos_x < screen.width() and pos_y < screen.height():
+                self.osd_window.move(pos_x, pos_y)
+                return
+
+        # Default fallback in alto a destra
+        self.osd_window.move(screen.width() - self.osd_window.width() - 20, 20)
+
     def check_dirty_state(self):
-        """Valuta differenze tra stato hardware in UI e JSON per sbloccare l'azione di salvataggio."""
         p_name = self.combo_profiles.currentText()
         if not p_name or p_name not in global_config["profiles"]:
             return
@@ -2162,7 +2297,7 @@ class OpenAquaeroUI(QMainWindow):
         val = float(text.replace("%", "")) / 100.0
         self._save_simple_config("osd_scale", val)
         self.osd_window.set_scale(val)
-        QTimer.singleShot(50, self.update_osd_position)
+        QTimer.singleShot(50, self.restore_osd_position)
 
     def show_about_dialog(self):
         msg = QMessageBox(self)
@@ -2181,6 +2316,7 @@ class OpenAquaeroUI(QMainWindow):
             f"Il software è liberamente modificabile, distribuibile e aperto ai contributi della community.</p>"
         )
         msg.exec()
+
     def change_language(self, lang):
         if global_config.get("lang") != lang:
             global_config["lang"] = lang
@@ -2241,7 +2377,7 @@ class OpenAquaeroUI(QMainWindow):
         QApplication.quit()
 
     def toggle_master(self, checked):
-        """Sospende le routine di controllo hardware. Alterna gli stili di attività o standby senza layout shift."""
+        """Sospende le routine di controllo hardware. Alterna gli stili di attività o standby."""
         self.is_controlling = checked
         self.hw_thread.active_control = checked
         if checked:
@@ -2249,7 +2385,6 @@ class OpenAquaeroUI(QMainWindow):
             self.btn_master.setStyleSheet("background-color: #00e5ff; color: #11111b; border: none; padding: 12px; font-size: 15px; font-weight: bold; border-radius: 6px;")
         else:
             self.btn_master.setText(T("resume_btn"))
-            # Sfondo verde acqua e scritta scura per mantenere assoluta coerenza visiva
             self.btn_master.setStyleSheet("background-color: #00e5ff; color: #11111b; border: none; padding: 12px; font-size: 15px; font-weight: bold; border-radius: 6px;")
 
     def _save_simple_config(self, key, value):
@@ -2317,7 +2452,7 @@ class OpenAquaeroUI(QMainWindow):
         self._save_simple_config("osd_export", checked)
         if checked:
             self.osd_window.show()
-            self.update_osd_position()
+            self.restore_osd_position()
         else:
             self.osd_window.hide()
 
@@ -2437,21 +2572,17 @@ class OpenAquaeroUI(QMainWindow):
 
         if self.chk_osd.isChecked() and osd_data:
             self.osd_window.update_data(osd_data)
-            self.update_osd_position()
+            self.restore_osd_position()
 
         self.check_security_alarms(temps, rpms, new_pwm_commands)
 
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    
-    if len(sys.argv) > 1 and sys.argv[1] in ["--toggle-osd", "--cycle-position"]:
-        if send_remote_command(sys.argv[1]):
-            sys.exit(0)
             
     app.setQuitOnLastWindowClosed(False)
     app.setStyleSheet(MODERN_STYLE)
     win = OpenAquaeroUI()
-    win.setup_command_server()
 
     if "--minimized" not in sys.argv:
         win.show()

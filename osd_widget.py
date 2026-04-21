@@ -1,35 +1,40 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel,
                                QProgressBar, QFrame)
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont
+from PySide6.QtCore import Qt, Signal, QTimer
 
 class AquaeroOSD(QWidget):
+    """
+    Floating desktop OSD widget.
+    Implements drag-and-drop repositioning and dynamic telemetry updates.
+    """
+    position_changed = Signal(int, int)
+
     def __init__(self):
-        super().__init__()
+        super().__init__() # L'assenza di parent sgancia la finestra logicamente
         self.scale = 1.0
-        self.max_rows = 8  # Default: crea una nuova colonna dopo 8 righe
+        self.max_rows = 8
         self.bg_opacity = 220
         self.color_names = "#cdd6f4"
         self.color_values = "#00e5ff"
         self.color_badges = "#00e5ff"
         self.custom_font = None
 
-        # BUGFIX WAYLAND: Sostituiamo Qt.ToolTip con Qt.Tool.
-        # ToolTip creava una dipendenza logica (xdg_popup) con la finestra principale,
-        # facendola muovere in tandem. Qt.Tool crea una finestra overlay indipendente
-        # ma la mantiene invisibile dalla taskbar e dall'Alt+Tab.
+        # Rimosso WindowTransparentForInput. Inserito Tool e BypassWindowManagerHint per slegarlo dal programma principale.
         self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint |
-                            Qt.Tool | Qt.WindowTransparentForInput | Qt.NoDropShadowWindowHint)
+                            Qt.Tool | Qt.BypassWindowManagerHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
 
-        # Layout Principale a Griglia (permette ancoraggi perfetti in 2D su 9 punti)
+        # Timer di debounce: salva la posizione solo quando hai smesso di muovere la finestra da 500ms
+        self.save_timer = QTimer(self)
+        self.save_timer.setSingleShot(True)
+        self.save_timer.timeout.connect(self._emit_position)
+
         self.layout = QGridLayout(self)
 
         self.bg_widget = QFrame(self)
         self.bg_layout = QVBoxLayout(self.bg_widget)
         self.layout.addWidget(self.bg_widget)
 
-        # --- Intestazione OSD ---
         self.header_layout = QHBoxLayout()
         self.icon_lbl = QLabel("📊")
         self.title_lbl = QLabel("OPENAQUAERO OSD")
@@ -41,14 +46,27 @@ class AquaeroOSD(QWidget):
         self.header_line = QFrame()
         self.header_line.setFrameShape(QFrame.HLine)
         self.bg_layout.addWidget(self.header_line)
-        # -------------------------------------
 
-        # Il contenitore per la griglia multi-colonna
         self.grid_layout = QGridLayout()
         self.bg_layout.addLayout(self.grid_layout)
 
         self.row_widgets = []
         self.apply_scaling()
+
+    def mousePressEvent(self, event):
+        """Cede il controllo del trascinamento direttamente al compositor (X11/Wayland)"""
+        if event.button() == Qt.LeftButton:
+            if self.windowHandle():
+                self.windowHandle().startSystemMove()
+            event.accept()
+
+    def moveEvent(self, event):
+        """Cattura il movimento e riavvia il timer per non saturare le scritture sul JSON"""
+        super().moveEvent(event)
+        self.save_timer.start(500)
+
+    def _emit_position(self):
+        self.position_changed.emit(self.x(), self.y())
 
     def set_scale(self, new_scale):
         self.scale = new_scale
@@ -63,7 +81,7 @@ class AquaeroOSD(QWidget):
         if font is not None: self.custom_font = font
         if max_rows is not None: self.max_rows = max_rows
 
-        self._force_rebuild = True # Flag per forzare il ricalcolo al prossimo aggiornamento
+        self._force_rebuild = True
         self.apply_scaling()
 
     def apply_scaling(self):
@@ -106,7 +124,7 @@ class AquaeroOSD(QWidget):
             if hasattr(self, 'sensor_ui'): self.sensor_ui.clear()
             return
 
-        # 1. RICOSTRUZIONE TOTALE (Solo se cambi sensori o modifichi l'estetica)
+        # 1. Structural Rebuild
         if not hasattr(self, 'sensor_ui') or len(self.sensor_ui) != len(hardware_data) or getattr(self, '_force_rebuild', False):
             self._force_rebuild = False
             for w in self.row_widgets:
@@ -174,7 +192,7 @@ class AquaeroOSD(QWidget):
                 })
             self.adjustSize()
 
-        # 2. AGGIORNAMENTO IN-PLACE (Fast-Path: Risolve definitivamente il flickering)
+        # 2. In-place Updates
         for i, item in enumerate(hardware_data):
             ui = self.sensor_ui[i]
 
