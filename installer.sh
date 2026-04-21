@@ -1,7 +1,6 @@
 #!/bin/bash
-# OpenAquaero - Installatore Universale Linux
+# OpenAquaero - Installatore Universale Linux (v2.2.1)
 
-# 1. Controllo dei privilegi di amministrazione
 if [ "$EUID" -ne 0 ]; then
   echo "ERRORE: Per installare OpenAquaero nel sistema, esegui lo script come root (es. sudo ./installer.sh)"
   exit 1
@@ -19,7 +18,6 @@ cp osd_widget.py /usr/lib/openaquaero/
 chmod 644 /usr/lib/openaquaero/*.py
 
 echo "=> Creazione dell'eseguibile globale in /usr/bin..."
-# Generazione dinamica del wrapper eseguibile
 cat << 'EOF' > /usr/bin/openaquaero
 #!/bin/bash
 exec python3 /usr/lib/openaquaero/openaquaero.py "$@"
@@ -30,7 +28,7 @@ echo "=> Generazione dinamica del lanciatore .desktop..."
 cat << 'EOF' > /usr/share/applications/openaquaero.desktop
 [Desktop Entry]
 Name=OpenAquaero
-Comment=Controllo Termico Avanzato per Aquaero 6 LT
+Comment=Software di controllo nativo per Aquaero 6 LT
 Exec=/usr/bin/openaquaero
 Icon=openaquaero
 Terminal=false
@@ -47,14 +45,13 @@ else
     echo "ATTENZIONE: File openaquaero.png non trovato nella cartella corrente. Icona saltata."
 fi
 
-echo "=> Configurazione delle regole udev per i futuri riavvii..."
+echo "=> Configurazione delle regole udev per i futuri riavvi..."
 cat << 'EOF' > /etc/udev/rules.d/99-aquaero.rules
 SUBSYSTEM=="hwmon", ACTION=="add", ATTRS{name}=="aquaero", RUN+="/bin/sh -c 'chmod a+w /sys/class/hwmon/%k/pwm*'"
 EOF
 chmod 644 /etc/udev/rules.d/99-aquaero.rules
 
-echo "=> Applicazione immediata dei permessi hardware (Nessun riavvio richiesto)..."
-# Questo ciclo cerca l'hardware Aquaero nei file di sistema e applica il chmod istantaneamente
+echo "=> Applicazione immediata dei permessi hardware..."
 AQUAERO_FOUND=0
 for hwmon in /sys/class/hwmon/hwmon*; do
     if [ -f "$hwmon/name" ] && grep -q "aquaero" "$hwmon/name"; then
