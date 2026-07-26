@@ -1,5 +1,5 @@
 #!/bin/bash
-# AquaControl - Universal Linux Installer (5.0.0)
+# AquaControl - Universal Linux Installer (5.0.1)
 # Per distro NON-Arch o installazione manuale. Su Arch usare il pacchetto (PKGBUILD).
 # Qui, a differenza del PKGBUILD, possiamo agire sul sistema (gruppo, utente, servizi).
 

@@ -257,7 +257,7 @@ TRANSLATIONS = {
         "fw360_max_strips": "Numero massimo di strisce raggiunto (20).",
         "fw360_strips": "Strisce LED virtuali",
         "info_dialog_header": """
-        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 5.0.0</h2>
+        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 5.0.1</h2>
         <p style='margin-top: 0;'><b>Maintainer:</b> Raffaele Schiavone<br>Progetto indipendente, rilasciato sotto licenza GPLv3.</p>
         """,
         "info_dialog_warning": """
@@ -506,7 +506,7 @@ TRANSLATIONS = {
         "fw360_max_strips": "Maximum number of strips reached (20).",
         "fw360_strips": "Virtual LED strips",
         "info_dialog_header": """
-        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 5.0.0</h2>
+        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 5.0.1</h2>
         <p style='margin-top: 0;'><b>Maintainer:</b> Raffaele Schiavone<br>Independent project, GPLv3 license.</p>
         """,
         "info_dialog_warning": """
@@ -756,7 +756,7 @@ TRANSLATIONS = {
         "fw360_strips": "Bandes LED virtuelles",
         "fw360_max_strips": "Maximum de 20 bandes atteint.",
         "info_dialog_header": """
-        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 5.0.0</h2>
+        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 5.0.1</h2>
         <p style='margin-top: 0;'><b>Mainteneur :</b> Raffaele Schiavone<br>Projet indépendant, licence GPLv3.</p>
         """,
         "info_dialog_warning": """
@@ -1006,7 +1006,7 @@ TRANSLATIONS = {
         "fw360_strips": "Tiras LED virtuales",
         "fw360_max_strips": "M\u00e1ximo de 20 tiras alcanzado.",
         "info_dialog_header": """
-        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 5.0.0</h2>
+        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 5.0.1</h2>
         <p style='margin-top: 0;'><b>Mantenedor:</b> Raffaele Schiavone<br>Proyecto independiente, licencia GPLv3.</p>
         """,
         "info_dialog_warning": """
@@ -1254,7 +1254,7 @@ TRANSLATIONS = {
         "fw360_timeline_help": "Ziehen zum Verschieben · Rechtsklick zum Löschen · Doppelklick zum Hinzufügen",
         "fw360_max_strips": "Maximale Anzahl an Streifen erreicht (20).",
         "info_dialog_header": """
-        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 5.0.0</h2>
+        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 5.0.1</h2>
         <p style='margin-top: 0;'><b>Betreuer:</b> Raffaele Schiavone<br>Unabhängiges Projekt, GPLv3-Lizenz.</p>
         """,
         "info_dialog_warning": """
@@ -1503,7 +1503,7 @@ TRANSLATIONS = {
         "fw360_timeline_help": "Перетащите для перемещения · правый клик для удаления · двойной клик для добавления",
         "fw360_max_strips": "Достигнуто максимальное количество лент (20).",
         "info_dialog_header": """
-        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 5.0.0</h2>
+        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 5.0.1</h2>
         <p style='margin-top: 0;'><b>Сопровождающий:</b> Raffaele Schiavone<br>Независимый проект, лицензия GPLv3.</p>
         """,
         "info_dialog_warning": """
@@ -1752,7 +1752,7 @@ TRANSLATIONS = {
         "fw360_timeline_help": "拖动以移动 · 右键单击以删除 · 双击以添加",
         "fw360_max_strips": "已达到最大灯带数量 (20)。",
         "info_dialog_header": """
-        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 5.0.0</h2>
+        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 5.0.1</h2>
         <p style='margin-top: 0;'><b>维护者:</b> Raffaele Schiavone<br>独立项目，GPLv3 许可证。</p>
         """,
         "info_dialog_warning": """
@@ -1895,7 +1895,7 @@ TRANSLATIONS = {
         "info_btn": "Tabulae Publicae",
         "info_dialog_header": """
         <h2 style='color: #FFD700; margin-bottom: 5px; margin-top: 0;'>AquaControl - Imperium Edition</h2>
-        <p style='margin-top: 0;'><b>Dictator Perpetuo:</b> Raffaele Schiavone<br>Proiectum liberum, sub lege GPLv3.</p>
+        <p style='margin-top: 0;'><b>Dictator Perpetuo:</b> Raffaele Schiavone<br>Proiectum liberum, sub lege GPLvIII.</p>
         """,
         "info_dialog_warning": """
         <p style='color: #ffc107; font-size: 14px;'><b>Monitum de Concordantia</b></p>

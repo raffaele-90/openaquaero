@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 pkgname=aquacontrol
-pkgver=5.0.0
+pkgver=5.0.1
 pkgrel=1
 pkgdesc="Control suite for Aquaero 6 LT and Farbwerk 360"
 arch=('any')

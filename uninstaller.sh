@@ -1,5 +1,5 @@
 #!/bin/bash
-# AquaControl - Universal Linux Uninstaller (5.0.0)
+# AquaControl - Universal Linux Uninstaller (5.0.1)
 
 if [ "$EUID" -ne 0 ]; then
   echo "ERROR: run this uninstaller as root (e.g. sudo ./uninstaller.sh)"
