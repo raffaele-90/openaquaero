@@ -22,34 +22,42 @@ import socket
 import json
 import time
 import threading
-from PySide6.QtDBus import QDBusConnection, QDBusMessage
+from engine import AquaeroEngine
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                                QHBoxLayout, QSystemTrayIcon, QMenu, QStyle,
                                QListWidget, QListWidgetItem, QStackedWidget,
                                QLabel, QPushButton, QComboBox, QLineEdit, QScrollArea,
-                               QGroupBox, QCheckBox, QMessageBox, QFrame, QDialog)
+                               QGroupBox, QCheckBox, QMessageBox, QFrame, QDialog, QSizePolicy)
 from PySide6.QtCore import Qt, QThread, Signal, QTimer, QSize, Slot, SLOT
 from PySide6.QtGui import QAction, QIcon, QFont, QColor, QPixmap
 
 # --- Importazioni Modulari ---
 from config_manager import global_config, save_config, CONFIG_FILE
 from i18n import T
-from engine import AquaeroEngine
-from farbwerk360_engine import Farbwerk360Engine
-from farbwerk360_effects import Farbwerk360EffectsEngine
 from osd_widget import AquaeroOSD
 from ui_tabs import DashboardTabWidget, SecurityTabWidget, SettingsTabWidget, GuideTabWidget, OSDConfigTabWidget, HardwareTabWidget, Farbwerk360TabWidget, get_colored_pixmap
-from ui_widgets import ChannelControlWidget, ProcessMappingDialog, MeltdownDialog
+from ui_widgets import ChannelControlWidget, ProcessMappingDialog
+from farbwerk360_effects import Farbwerk360EffectsEngine
+
 
 IPC_SOCKET_PATH = "/tmp/aquacontrol_osd.sock"
 
-def get_dynamic_style(opacity_value):
+def get_dynamic_style(opacity_value, is_imperium=False):
+    main_accent = "#FFD700" if is_imperium else "#00e5ff"
+    main_accent_hover = "#FDE047" if is_imperium else "#5cf0ff"
+    sidebar_sel_bg = "rgba(139, 0, 0, 0.6)" if is_imperium else "rgba(0, 229, 255, 50)"
+    sidebar_sel_border = "#FFD700" if is_imperium else "#00e5ff"
+
+    # Sfondi: Grigio scuro (Normale) vs Rosso Porpora Scuro (Imperium)
+    bg_main = f"rgba(45, 10, 15, {opacity_value})" if is_imperium else f"rgba(20, 22, 24, {opacity_value})"
+    bg_sidebar = f"rgba(25, 5, 10, {min(255, opacity_value + 35)})" if is_imperium else f"rgba(10, 10, 15, {min(255, opacity_value + 35)})"
+    bg_solid = "rgba(70, 15, 20, 225)" if is_imperium else "rgba(35, 38, 41, 225)"
+
     return f"""
     QMainWindow {{ background: transparent; }}
 
     #CentralWidget {{
-        /* Sfondo principale Breeze Dark (Nero profondo) */
-        background-color: rgba(20, 22, 24, {opacity_value});
+        background-color: {bg_main};
         border-radius: 12px;
         border: 1px solid rgba(255, 255, 255, 15);
     }}
@@ -57,73 +65,42 @@ def get_dynamic_style(opacity_value):
     QWidget {{ color: #e0e0e0; font-family: system-ui, sans-serif; }}
 
     #SidebarContainer {{
-        background-color: rgba(10, 10, 15, {min(255, opacity_value + 35)});
-        border-right: 1px solid rgba(0, 229, 255, 30);
+        background-color: {bg_sidebar};
+        border-right: 1px solid rgba({ '255, 215, 0' if is_imperium else '0, 229, 255' }, 30);
         border-top-left-radius: 12px;
         border-bottom-left-radius: 12px;
     }}
 
     QListWidget#Sidebar {{ background: transparent; border: none; outline: 0; }}
-    QListWidget#Sidebar::item {{
-        margin: 8px 0px;
-        border-left: 4px solid transparent;
-        padding-left: 15px;
-    }}
-
-    QListWidget#Sidebar::item:selected {{
-        background-color: rgba(0, 229, 255, 50);
-        border-left: 4px solid #00e5ff;
-        color: #ffffff;
-    }}
+    QListWidget#Sidebar::item {{ margin: 8px 0px; border-left: 4px solid transparent; padding-left: 15px; }}
+    QListWidget#Sidebar::item:selected {{ background-color: {sidebar_sel_bg}; border-left: 4px solid {sidebar_sel_border}; color: #ffffff; }}
 
     #InfoButton {{ background: transparent; border: none; color: #a6adc8; font-size: 24px; padding: 20px 0px; }}
-    #InfoButton:hover {{ color: #00e5ff; }}
+    #InfoButton:hover {{ color: {main_accent}; }}
 
-    QGroupBox {{
-        border: 1px solid rgba(255, 255, 255, 20);
-        border-radius: 8px;
-        margin-top: 5px;
-        padding: 10px;
-        /* Riquadri solidi Breeze Dark (Grigio/Nero tecnico) */
-        background-color: rgba(35, 38, 41, 225);
-    }}
+    QGroupBox {{ border: 1px solid rgba(255, 255, 255, 20); border-radius: 8px; margin-top: 5px; padding: 10px; background-color: {bg_solid}; }}
+    QGroupBox::title {{ subcontrol-origin: margin; left: 15px; padding: 0 5px; color: {main_accent}; font-size: 13px; font-weight: bold; }}
 
-    QGroupBox::title {{
-        subcontrol-origin: margin; left: 15px; padding: 0 5px; color: #00e5ff; font-size: 13px;
-    }}
-
-    QPushButton#ActionBtn {{
-        background-color: #00e5ff !important; color: #11111b !important; font-size: 14px;
-        font-weight: bold; border-radius: 6px; padding: 12px; border: none;
-    }}
+    QPushButton#ActionBtn {{ background-color: {main_accent} !important; color: #11111b !important; font-size: 14px; font-weight: bold; border-radius: 6px; padding: 12px; border: none; }}
     QPushButton#ActionBtn:disabled {{ background-color: #313244 !important; color: #585b70 !important; }}
 
-    QPushButton#SecurityBtn {{
-        background-color: #ff3333 !important; color: #ffffff !important; font-size: 14px;
-        font-weight: bold; border-radius: 6px; padding: 12px; border: none;
-    }}
+    QPushButton#SecurityBtn {{ background-color: #ff3333 !important; color: #ffffff !important; font-size: 14px; font-weight: bold; border-radius: 6px; padding: 12px; border: none; }}
     QPushButton#SecurityBtn:disabled {{ background-color: #313244 !important; color: #585b70 !important; }}
 
-    /* --- FIX: Separazione per compatibilità temi di sistema (es. KDE Plasma) --- */
-    QLineEdit, QComboBox {{
-        background-color: rgba(10, 10, 10, {min(255, opacity_value + 20)});
-        border: 1px solid rgba(255, 255, 255, 20); border-radius: 4px; padding: 5px; color: #ffffff;
-    }}
+    QLineEdit, QComboBox {{ background-color: rgba(0, 0, 0, 80); border: 1px solid rgba(255, 255, 255, 20); border-radius: 4px; padding: 5px; color: #ffffff; }}
 
-
-    /* --- Scrollbar sottili a capsula --- */
     QScrollArea {{ border: none; background: transparent; }}
     QScrollArea QWidget {{ background: transparent; }}
 
-    QScrollBar:vertical {{ background-color: rgba(30, 30, 46, 120); width: 8px; margin: 0px; border-radius: 4px; }}
-    QScrollBar::handle:vertical {{ background-color: rgba(0, 229, 255, 180); min-height: 30px; border-radius: 4px; }}
-    QScrollBar::handle:vertical:hover {{ background-color: #5cf0ff; }}
+    QScrollBar:vertical {{ background-color: rgba(0, 0, 0, 80); width: 8px; margin: 0px; border-radius: 4px; }}
+    QScrollBar::handle:vertical {{ background-color: rgba({ '255, 215, 0' if is_imperium else '0, 229, 255' }, 180); min-height: 30px; border-radius: 4px; }}
+    QScrollBar::handle:vertical:hover {{ background-color: {main_accent_hover}; }}
     QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0px; }}
     QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{ background: none; }}
 
-    QScrollBar:horizontal {{ background-color: rgba(30, 30, 46, 120); height: 8px; margin: 0px; border-radius: 4px; }}
-    QScrollBar::handle:horizontal {{ background-color: rgba(0, 229, 255, 180); min-width: 30px; border-radius: 4px; }}
-    QScrollBar::handle:horizontal:hover {{ background-color: #5cf0ff; }}
+    QScrollBar:horizontal {{ background-color: rgba(0, 0, 0, 80); height: 8px; margin: 0px; border-radius: 4px; }}
+    QScrollBar::handle:horizontal {{ background-color: rgba({ '255, 215, 0' if is_imperium else '0, 229, 255' }, 180); min-width: 30px; border-radius: 4px; }}
+    QScrollBar::handle:horizontal:hover {{ background-color: {main_accent_hover}; }}
     QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{ width: 0px; }}
     QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{ background: none; }}
     """
@@ -162,48 +139,77 @@ class IPCServer(QThread):
         except: pass
         self.wait()
 
-class HardwareWorker(QThread):
+class DaemonClientWorker(QThread):
     telemetry_ready = Signal(dict)
-    def __init__(self, engine):
+
+    def __init__(self):
         super().__init__()
-        self.engine = engine
         self.running = True
-        self.active_control = True
-        self.pwm_commands = {}
+        self.socket_path = "/run/aquacontrol.sock"
 
     def run(self):
-        from config_manager import global_config
         while self.running:
-            # 1. Raccoglie la telemetria completa
-            data = self.engine.get_dashboard_telemetry()
+            try:
+                # Si connette al demone
+                client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                client.connect(self.socket_path)
 
-            # 2. Applica i comandi fisici sfruttando la logica asincrona
-            if self.active_control:
-                hw_config = global_config.get("hardware_channels", {})
-                for ch_id, pwm_val in self.pwm_commands.items():
-                    ch_conf = hw_config.get(str(ch_id), {})
-                    boost_en = ch_conf.get("boost_en", False)
-                    boost_time = ch_conf.get("boost_time", 1.0)
+                # Prepara la richiesta: chiediamo solo la telemetria
+                request = {
+                    "action": "sync"
+                }
 
-                    self.engine.apply_pwm(ch_id, pwm_val, boost_enabled=boost_en, boost_time=boost_time)
+                client.sendall(json.dumps(request).encode('utf-8'))
 
-            # 3. Spedisce i dati alla UI
-            self.telemetry_ready.emit(data)
+                # La telemetria con lo storico può superare i 16 KB: leggiamo fino
+                # a EOF, altrimenti il JSON arriva troncato e json.loads fallisce.
+                chunks = []
+                while True:
+                    buf = client.recv(65536)
+                    if not buf:
+                        break
+                    chunks.append(buf)
+
+                if chunks:
+                    telemetry = json.loads(b"".join(chunks).decode('utf-8'))
+                    self.telemetry_ready.emit(telemetry)
+
+                client.close()
+            except Exception as e:
+                # Se il demone non è attivo, mandiamo dati vuoti per non far crashare la GUI
+                self.telemetry_ready.emit({})
+
             time.sleep(1)
 
     def stop(self):
         self.running = False
         self.wait()
 
-
 class AquaControlUI(QMainWindow):
+
+    def send_daemon_command(self, payload):
+        """Comando one-shot al demone (modalità PWM/DC, calibrazione flusso)."""
+        try:
+            c = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            c.settimeout(3.0)
+            c.connect("/run/aquacontrol.sock")
+            c.sendall(json.dumps(payload).encode('utf-8'))
+            chunks = []
+            while True:
+                buf = c.recv(4096)
+                if not buf:
+                    break
+                chunks.append(buf)
+            c.close()
+            return json.loads(b"".join(chunks).decode('utf-8')) if chunks else {}
+        except Exception as e:
+            print(f"[GUI] Comando al demone fallito: {e}")
+            return {}
+
     def __init__(self):
         super().__init__()
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setStyleSheet("background: transparent;")
-        self.engine = AquaeroEngine()
-        self.fw360_engine = Farbwerk360EffectsEngine()
-        self.fw360_engine.connect()
         self.setWindowTitle(T("app_title"))
         self.resize(1000, 950)
         self.updating_combo = False
@@ -224,119 +230,25 @@ class AquaControlUI(QMainWindow):
 
         self.setup_tray_icon()
         self.init_settings_vars()
+        self.engine = AquaeroEngine()
+        self.fw360_engine = Farbwerk360EffectsEngine()
         self.setup_ui()
 
-        self.hw_thread = HardwareWorker(self.engine)
+        self.hw_thread = DaemonClientWorker()
         self.hw_thread.telemetry_ready.connect(self.on_telemetry_received)
         self.hw_thread.start()
         self.is_controlling = True
 
+        # Ultimo snapshot canali inviato al demone: spinge il push live solo su modifica.
+        self._last_pushed_channels = None
         self.refresh_profile_list()
         self.combo_profiles.currentIndexChanged.connect(self.load_selected_profile)
         self.load_last_profile()
-
-        self.active_auto_profile = None
-        self.pre_auto_profile = None
-        self.process_timer = QTimer(self)
-        self.process_timer.timeout.connect(self.check_running_processes)
-        self.process_timer.start(5000)
 
         self.dirty_timer = QTimer(self)
         self.dirty_timer.timeout.connect(self.check_dirty_state)
         self.dirty_timer.start(500)
 
-        # --- FARBWERK 360: LOGICA DI AVVIO E SOSPENSIONE ---
-
-        # 1. Applicazione all'avvio (se la spunta è attiva)
-        if global_config.get("fw360_apply_on_start", False):
-            # Usiamo un leggero ritardo per assicurarci che la UI sia pronta e l'hardware inizializzato
-            QTimer.singleShot(1000, self.farbwerk360_tab.apply_silent_startup)
-
-        # 2. Registrazione al bus di sistema per intercettare la sospensione (logind)
-        system_bus = QDBusConnection.systemBus()
-        system_bus.connect(
-            "org.freedesktop.login1",
-            "/org/freedesktop/login1",
-            "org.freedesktop.login1.Manager",
-            "PrepareForSleep",
-            self,
-            SLOT("on_prepare_for_sleep(bool)")
-        )
-
-        # Controllo diagnostico della sessione precedente
-        QTimer.singleShot(1500, self.check_previous_session_emergency)
-
-    def check_previous_session_emergency(self):
-        pending_path = os.path.expanduser("~/.config/aquacontrol/emergency_pending.json")
-        if os.path.exists(pending_path):
-            try:
-                with open(pending_path, "r") as f:
-                    data = json.load(f)
-
-                os.remove(pending_path)
-
-                dialog = QDialog(self)
-                dialog.setWindowTitle(T("alarm_critical_title"))
-                dialog.setStyleSheet("QDialog { background-color: #313244; color: #cdd6f4; }")
-                dialog.resize(500, 260)
-
-                layout = QVBoxLayout(dialog)
-                layout.setContentsMargins(20, 20, 20, 20)
-                layout.setSpacing(15)
-
-                header_layout = QHBoxLayout()
-
-                lbl_icon = QLabel()
-                pixmap = self.style().standardIcon(QStyle.SP_MessageBoxWarning).pixmap(48, 48)
-                lbl_icon.setPixmap(pixmap)
-                lbl_icon.setStyleSheet("background: transparent; border: none;")
-
-                lbl_title = QLabel(
-                    f"<h3 style='color: #ff3333; margin: 0;'>{T('loop_emergency')}</h3>"
-                    f"<p style='color: #a6adc8; margin: 5px 0 0 0;'>{T('popup_fail_safe_msg')}</p>"
-                )
-                lbl_title.setTextFormat(Qt.RichText)
-                lbl_title.setStyleSheet("background: transparent; border: none;")
-
-                header_layout.addWidget(lbl_icon)
-                header_layout.addSpacing(15)
-                header_layout.addWidget(lbl_title)
-                header_layout.addStretch()
-                layout.addLayout(header_layout)
-
-                line = QFrame()
-                line.setFrameShape(QFrame.HLine)
-                line.setStyleSheet("border: 1px solid #45475a; background-color: rgba(255,255,255,10);")
-                layout.addWidget(line)
-
-                reason_text = data.get("reason", "Unknown")
-                timestamp = data.get("timestamp", "--")
-
-                lbl_details = QLabel(
-                    f"<p style='font-size: 13px; color: #cdd6f4; line-height: 1.6; margin: 0;'>"
-                    f"<b>{T('popup_log_title')}</b><br>"
-                    f"• <b>{T('popup_date_time')}</b> {timestamp}<br>"
-                    f"• <b>{T('popup_alarm_cause')}</b> <span style='color: #f38ba8; font-weight: bold;'>{reason_text}</span>"
-                    f"</p>"
-                )
-                lbl_details.setTextFormat(Qt.RichText)
-                lbl_details.setWordWrap(True)
-                lbl_details.setStyleSheet("background: transparent; border: none;")
-                layout.addWidget(lbl_details)
-
-                btn_layout = QHBoxLayout()
-                btn_ok = QPushButton(T("alarm_close_verify"))
-                btn_ok.setFixedWidth(120)
-                btn_ok.setStyleSheet("background-color: #00e5ff; color: #11111b; font-weight: bold; border-radius: 4px; padding: 6px;")
-                btn_ok.clicked.connect(dialog.accept)
-                btn_layout.addStretch()
-                btn_layout.addWidget(btn_ok)
-                btn_layout.addStretch()
-                layout.addLayout(btn_layout)
-
-                dialog.exec()
-            except Exception as e:
-                print(f"Errore durante l'analisi del flag diagnostico: {e}")
 
     def init_settings_vars(self):
         self.chk_autostart = QCheckBox(T("autostart"))
@@ -364,7 +276,14 @@ class AquaControlUI(QMainWindow):
 
     def setup_tray_icon(self):
         self.tray_icon = QSystemTrayIcon(self)
-        self.tray_icon.setIcon(QIcon.fromTheme("aquacontrol", self.style().standardIcon(QStyle.SP_ComputerIcon)))
+
+        is_imperium = global_config.get("lang") == "la"
+        if is_imperium:
+            icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "icons", "imperium-edition.svg")
+            self.tray_icon.setIcon(QIcon(icon_path))
+        else:
+            self.tray_icon.setIcon(QIcon.fromTheme("aquacontrol", self.style().standardIcon(QStyle.SP_ComputerIcon)))
+
         self.tray_menu = QMenu()
 
         self.action_toggle_osd = QAction(T("tray_toggle_osd"), self)
@@ -390,8 +309,6 @@ class AquaControlUI(QMainWindow):
         self.tray_icon.activated.connect(self.on_tray_click)
 
     def setup_ui(self):
-        # Importazione necessaria per la gestione dello spazio
-        from PySide6.QtWidgets import QSizePolicy
 
         # 1. Widget Centrale (Sfondo trasparente)
         central_widget = QWidget()
@@ -498,9 +415,10 @@ class AquaControlUI(QMainWindow):
         self.sidebar.currentRowChanged.connect(self.stack.setCurrentIndex)
         self.sidebar.setCurrentRow(0)
 
-        # 7. APPLICAZIONE STILE E OPACITÀ (Corretto ai toni Base)
+        # 7. APPLICAZIONE STILE E OPACITÀ (Corretto ai toni Base / Skin Imperiale)
         initial_opacity = global_config.get("window_opacity", 180)
-        self.setStyleSheet(get_dynamic_style(initial_opacity))
+        is_imperium = global_config.get("lang") == "la"
+        self.setStyleSheet(get_dynamic_style(initial_opacity, is_imperium))
 
     def build_fan_control_ui(self, layout):
         header_layout = QHBoxLayout()
@@ -510,7 +428,8 @@ class AquaControlUI(QMainWindow):
         header_layout.addWidget(lbl_icon)
 
         lbl_main_title = QLabel(T("fan_tab_title"))
-        lbl_main_title.setStyleSheet("font-size: 24px; color: #00e5ff; font-weight: bold;")
+        is_imperium = global_config.get("lang") == "la"
+        lbl_main_title.setStyleSheet(f"font-size: 24px; color: {'#FFD700' if is_imperium else '#00e5ff'}; font-weight: bold;")
         header_layout.addWidget(lbl_main_title)
         header_layout.addStretch()
 
@@ -541,7 +460,8 @@ class AquaControlUI(QMainWindow):
         self.txt_new_profile = QLineEdit()
         self.txt_new_profile.setPlaceholderText(T("placeholder"))
         self.btn_save_profile = QPushButton(T("save_btn"))
-        self.btn_save_profile.setStyleSheet("background-color: #00e5ff; color: #11111b;")
+        is_imperium = global_config.get("lang") == "la"
+        self.btn_save_profile.setStyleSheet(f"background-color: {'#FFD700' if is_imperium else '#00e5ff'}; color: #11111b;")
         self.btn_save_profile.clicked.connect(self.save_new_profile)
 
         profile_layout.addWidget(self.combo_profiles)
@@ -563,19 +483,26 @@ class AquaControlUI(QMainWindow):
 
         self.channels = []
         for i in range(1, 5):
-            cw = ChannelControlWidget(i, self.engine)
+            cw = ChannelControlWidget(i, engine=self.engine)
             self.channels_layout.addWidget(cw)
             self.channels.append(cw)
 
     def on_telemetry_received(self, data):
+        # Le chiavi per-canale sono INTERE nel demone, ma il JSON le rende STRINGHE.
+        # Le riconvertiamo una volta sola, così dashboard, canali e OSD le trovano.
+        for _k in ("rpms", "volts", "pwm_loads", "flows"):
+            if isinstance(data.get(_k), dict):
+                data[_k] = {int(_kk): _vv for _kk, _vv in data[_k].items()}
+
+        self.dashboard_tab.update_telemetry(data)
+
+        # Dati condivisi tra i widget dei canali e l'OSD.
         temps = data.get('temps', {})
         rpms = data.get('rpms', {})
         volts = data.get('volts', {})
-        sys_data = data.get('system', {})
-        new_pwm_commands = {}
+        pwm_loads = data.get('pwm_loads', {})
         osd_data = []
 
-        self.dashboard_tab.update_telemetry(data)
         osd_conf = global_config.get("osd_config", {})
 
         if getattr(self, 'chk_osd', None) and self.chk_osd.isChecked():
@@ -599,12 +526,10 @@ class AquaControlUI(QMainWindow):
             ch.setVisible(is_enabled)
 
             if not is_enabled:
-                # Se è spento, forza a 0 il comando e salta i calcoli
-                if self.is_controlling: new_pwm_commands[ch.channel_id] = 0
                 continue
 
-            pwm_val = ch.process_telemetry(temps, rpms, volts, self.is_controlling)
-            if pwm_val is not None: new_pwm_commands[ch.channel_id] = pwm_val
+            # Passiamo i carichi PWM già calcolati
+            ch.process_telemetry(temps, rpms, volts, pwm_loads)
 
             if getattr(self, 'chk_osd', None) and self.chk_osd.isChecked():
                 ch_id = f"ch_{ch.channel_id}"
@@ -614,139 +539,27 @@ class AquaControlUI(QMainWindow):
                     t = temps.get(sensor_id) if sensor_id else 0.0
                     if t is None: t = 0.0
                     r = rpms.get(ch.channel_id, 0)
-                    v = volts.get(ch.channel_id, 0.0)  # <-- ESTRAE IL VOLTAGGIO
-                    p = int((pwm_val / 255.0) * 100) if pwm_val is not None else 0
+                    v = volts.get(ch.channel_id, 0.0)
+                    p = pwm_loads.get(ch.channel_id, 0) # <-- OSD LEGGE IL DATO DEL DEMONE
                     ch_name = ch_conf.get("custom_name") or ch.edit_name.text()
                     osd_data.append({'name': ch_name, 'temp': t, 'rpm': r, 'volt': v, 'pwm': p})
-
-        if self.is_controlling:
-            self.hw_thread.pwm_commands = new_pwm_commands
 
         if getattr(self, 'chk_osd', None) and self.chk_osd.isChecked() and osd_data:
             self.osd_window.update_data(osd_data)
             self.restore_osd_position()
 
-        self.check_security_alarms(temps, rpms, data.get('flows', {}), new_pwm_commands)
+        # Allarmi dal demone: la GUI POSSIEDE l'OSD, quindi qui fa SOLO l'OSD-rosso.
+        # Popup rosso, suono e comando personalizzato sono passati all'agent, così la
+        # reazione vale anche a GUI chiusa e non viene eseguita due volte (GUI + agent).
+        active_alarms = data.get("active_alarms", [])
 
-    def check_security_alarms(self, temps, rpms, flows, pwm_commands):
-        sec_config = global_config.get("security", {})
-        if not sec_config: return
-
-        channels_sec = sec_config.get("channels", {})
-        flows_sec = sec_config.get("flows", {})
-        actions_sec = sec_config.get("actions", {})
-        alarm_triggered_this_tick = False
-        alarm_messages = []
-
-        if not hasattr(self, 'alarm_trackers'):
-            self.alarm_trackers = {}
-
-        current_time = time.time()
-
-        # 1. Monitoraggio Canali 12V
-        for ch in self.channels:
-            ch_id_str = str(ch.channel_id)
-            c_sec = channels_sec.get(ch_id_str, {})
-
-            allowed_delay = c_sec.get("delay_val", 3)
-            current_pwm = pwm_commands.get(ch.channel_id, 0) if self.is_controlling else 0
-            current_pwm_percent = int((current_pwm / 255.0) * 100)
-
-            if self.is_controlling and current_pwm_percent == 0:
-                self.alarm_trackers.pop(ch_id_str, None)
-                continue
-
-            channel_violations = []
-
-            if c_sec.get("rpm_en"):
-                current_rpm = rpms.get(ch.channel_id, 0)
-                if current_rpm <= c_sec.get("rpm_val", 0):
-                    channel_violations.append(T("alarm_rpm_msg").format(ch=ch_id_str, rpm=current_rpm))
-
-            if c_sec.get("temp_en"):
-                sensor_id = ch.combo_sensors.currentData()
-                current_temp = temps.get(sensor_id)
-                if current_temp is not None and current_temp >= c_sec.get("temp_val", 999):
-                    channel_violations.append(T("alarm_temp_msg").format(ch=ch_id_str, temp=current_temp))
-
-            if c_sec.get("power_en") and self.is_controlling:
-                if current_pwm_percent <= c_sec.get("power_val", 0):
-                    channel_violations.append(T("alarm_power_msg").format(ch=ch_id_str, p=current_pwm_percent))
-
-            if channel_violations:
-                if ch_id_str not in self.alarm_trackers:
-                    self.alarm_trackers[ch_id_str] = current_time
-
-                if current_time - self.alarm_trackers[ch_id_str] >= allowed_delay:
-                    alarm_triggered_this_tick = True
-                    alarm_messages.extend(channel_violations)
-            else:
-                self.alarm_trackers.pop(ch_id_str, None)
-
-        # 2. Monitoraggio Sensori di Flusso
-        for f_id in range(1, 3):
-            f_id_str = str(f_id)
-            f_sec = flows_sec.get(f_id_str, {})
-            allowed_delay = f_sec.get("delay_val", 5)
-            current_flow = flows.get(f_id, 0.0)
-
-            flow_violations = []
-            if f_sec.get("flow_en"):
-                if current_flow <= f_sec.get("flow_val", 0.0):
-                    flow_violations.append(T("alarm_flow_msg").format(ch=f_id_str, flow=current_flow))
-
-            tracker_key = f"flow_{f_id_str}"
-            if flow_violations:
-                if tracker_key not in self.alarm_trackers:
-                    self.alarm_trackers[tracker_key] = current_time
-
-                if current_time - self.alarm_trackers[tracker_key] >= allowed_delay:
-                    alarm_triggered_this_tick = True
-                    alarm_messages.extend(flow_violations)
-            else:
-                self.alarm_trackers.pop(tracker_key, None)
-
-        # 3. Innesco Allarme Globale di Emergenza
-        if alarm_triggered_this_tick and not self.alarm_triggered:
+        if active_alarms and not self.alarm_triggered:
             self.alarm_triggered = True
-
-            if actions_sec.get("osd_en") and self.osd_window.isVisible():
+            sec_config = global_config.get("security", {})
+            if sec_config.get("actions", {}).get("osd_en") and self.osd_window.isVisible():
                 self.osd_window.bg_widget.setStyleSheet("background-color: rgba(200, 0, 0, 235); border-radius: 12px; border: 3px solid #ffffff;")
 
-            if actions_sec.get("sound_en"):
-                default_alarm = "/usr/share/sounds/freedesktop/stereo/suspend-error.oga"
-                fallback_alarm = "/usr/share/sounds/freedesktop/stereo/dialog-error.oga"
-                if os.path.exists(default_alarm): subprocess.Popen(["paplay", default_alarm])
-                elif os.path.exists(fallback_alarm): subprocess.Popen(["paplay", fallback_alarm])
-                else: subprocess.Popen(["paplay", "/usr/share/sounds/ocean/stereo/dialog-warning.oga"])
-
-            self.tray_icon.showMessage(T("loop_emergency"), " | ".join(alarm_messages), QSystemTrayIcon.Critical, 5000)
-
-            if not hasattr(self, 'meltdown_dialog') or not self.meltdown_dialog.isVisible():
-                self.meltdown_dialog = MeltdownDialog(alarm_messages, actions_sec, None)
-                self.meltdown_dialog.show()
-
-            def execute_emergency_sequence():
-                cmd_enabled = actions_sec.get("cmd_en")
-                cmd_text = actions_sec.get("cmd_val", "").strip()
-                shutdown_enabled = actions_sec.get("shutdown_en")
-                delay_seconds = actions_sec.get("delay_val", 0)
-
-                if cmd_enabled and cmd_text:
-                    try:
-                        subprocess.Popen(cmd_text, shell=True)
-                    except Exception as e:
-                        print(f"Errore comando personalizzato: {e}")
-
-                if shutdown_enabled:
-                    trigger_reason = alarm_messages[0] if alarm_messages else "Unknown"
-                    self.engine.trigger_emergency_shutdown(trigger_reason, 99.9, delay_seconds)
-
-            emergency_thread = threading.Thread(target=execute_emergency_sequence)
-            emergency_thread.daemon = True
-            emergency_thread.start()
-
-        elif not alarm_triggered_this_tick and self.alarm_triggered:
+        elif not active_alarms and self.alarm_triggered:
             self.alarm_triggered = False
             if self.osd_window.isVisible():
                 self.osd_window.apply_scaling()
@@ -764,6 +577,13 @@ class AquaControlUI(QMainWindow):
         saved_profile_data = global_config["profiles"][p_name]
         current_profile_data = {str(ch.channel_id): ch.get_state() for ch in self.channels}
         current_safe = json.loads(json.dumps(current_profile_data))
+
+        # Push live: se i canali sono cambiati dall'ultimo invio, li spingiamo subito al
+        # demone (senza salvare). Lui li tiene in RAM e li applica nel loop 1 Hz.
+        if current_safe != self._last_pushed_channels:
+            self._last_pushed_channels = current_safe
+            self.send_daemon_command({"action": "apply_channels", "channels": current_safe})
+
         is_dirty = (saved_profile_data != current_safe)
 
         self.btn_save_current.setEnabled(is_dirty)
@@ -824,8 +644,11 @@ class AquaControlUI(QMainWindow):
             for ch in self.channels:
                 ch_data = profile_data.get(str(ch.channel_id))
                 if ch_data: ch.set_state(ch_data)
-            global_config["last_profile"] = p_name
-            save_config(global_config)
+            # Salviamo solo se il profilo attivo cambia davvero: evita una scrittura
+            # inutile a ogni avvio (che farebbe anche ricaricare la config al demone).
+            if global_config.get("last_profile") != p_name:
+                global_config["last_profile"] = p_name
+                save_config(global_config)
             self.check_dirty_state()
 
     def load_last_profile(self):
@@ -836,8 +659,7 @@ class AquaControlUI(QMainWindow):
             self.updating_combo = False
             self.load_selected_profile()
 
-    def change_osd_scale(self, text):
-        val = float(text.replace("%", "")) / 100.0
+    def change_osd_scale(self, val):
         self._save_simple_config("osd_scale", val)
         self.osd_window.set_scale(val)
         QTimer.singleShot(50, self.restore_osd_position)
@@ -854,20 +676,24 @@ class AquaControlUI(QMainWindow):
         header_layout = QHBoxLayout()
         lbl_icon = QLabel()
 
-        system_icon = "/usr/share/icons/hicolor/512x512/apps/aquacontrol.png"
+        is_imperium = global_config.get("lang") == "la"
 
-        # os.path è già importato in cima a main.py
-        local_icon = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aquacontrol.png")
-
-        if os.path.exists(system_icon):
-            pixmap = QPixmap(system_icon)
-        elif os.path.exists(local_icon):
-            pixmap = QPixmap(local_icon)
+        if is_imperium:
+            icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "icons", "imperium-edition.svg")
+            pixmap = QIcon(icon_path).pixmap(120, 120) # Gigante e gloriosa!
         else:
-            pixmap = QIcon.fromTheme("aquacontrol").pixmap(75, 75)
+            system_icon = "/usr/share/icons/hicolor/512x512/apps/aquacontrol.png"
+            local_icon = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aquacontrol.png")
+
+            if os.path.exists(system_icon):
+                pixmap = QPixmap(system_icon)
+            elif os.path.exists(local_icon):
+                pixmap = QPixmap(local_icon)
+            else:
+                pixmap = QIcon.fromTheme("aquacontrol").pixmap(75, 75)
 
         if not pixmap.isNull():
-            lbl_icon.setPixmap(pixmap.scaled(75, 75, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            lbl_icon.setPixmap(pixmap.scaled(120 if is_imperium else 75, 120 if is_imperium else 75, Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
         lbl_title = QLabel()
         lbl_title.setTextFormat(Qt.RichText)
@@ -909,11 +735,16 @@ class AquaControlUI(QMainWindow):
         layout.addLayout(warning_layout)
 
         btn_layout = QHBoxLayout()
-        btn_ok = QPushButton(" OK")
+
+        is_imperium = global_config.get("lang") == "la"
+        txt_ok = " Fiat!" if is_imperium else " OK"
+        colore_ok = "#FFD700" if is_imperium else "#00e5ff"
+
+        btn_ok = QPushButton(txt_ok)
         icon_check = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "icons", "check.svg")
         btn_ok.setIcon(QIcon(get_colored_pixmap(icon_check, 16, "#11111b")))
         btn_ok.setFixedWidth(100)
-        btn_ok.setStyleSheet("background-color: #00e5ff; color: #11111b; font-weight: bold; border-radius: 4px; padding: 6px;")
+        btn_ok.setStyleSheet(f"background-color: {colore_ok}; color: #11111b; font-weight: bold; border-radius: 4px; padding: 6px;")
         btn_ok.clicked.connect(dialog.accept)
 
         btn_layout.addStretch()
@@ -925,12 +756,45 @@ class AquaControlUI(QMainWindow):
         dialog.exec()
 
     def change_language(self, lang):
-        if global_config.get("lang") != lang:
+        current_saved_lang = global_config.get("lang", "en")
+
+        if current_saved_lang != lang:
+
+            if lang == "la":
+                msg = QMessageBox(self)
+                msg.setWindowTitle("Decretum Imperiale")
+
+                msg.setText("The high patricians of the academic ivory tower deem anyone lacking their illustrious scrolls and titles entirely unworthy of the sacred art of coding.\n\nThe humble architect of this software, conversely, decrees that this program shall only serve those who understand the tongue of the greatest Empire.\n\nAre you a citizen of Rome, or a mere barbarian?")
+
+                msg.setStyleSheet("QMessageBox { background-color: #1e1e2e; color: #cdd6f4; font-size: 14px; }")
+
+                btn_ave = msg.addButton("Ave Caesar", QMessageBox.AcceptRole)
+                btn_ave.setStyleSheet("background-color: #FFD700; color: #8B0000; font-weight: bold; padding: 6px; border-radius: 4px;")
+
+                btn_pleb = msg.addButton("I am a barbarian", QMessageBox.RejectRole)
+                btn_pleb.setStyleSheet("background-color: #313244; color: #cdd6f4; padding: 6px; border-radius: 4px;")
+
+                msg.exec()
+
+                if msg.clickedButton() == btn_pleb:
+
+                    QMessageBox.warning(self, "Repulsus!", "I knew you were just a barbarian academic, unworthy of Rome.")
+
+                    # 2. Ripristino visivo forzato della combobox alla lingua precedente
+                    self.settings_tab.combo_lang.blockSignals(True)
+                    self.settings_tab.combo_lang.setCurrentText(current_saved_lang)
+                    self.settings_tab.combo_lang.blockSignals(False)
+                    return
+
             global_config["lang"] = lang
             save_config(global_config)
-            reply = QMessageBox.question(self, T("info_btn"), T("lang_prompt"), QMessageBox.Yes | QMessageBox.No)
-            if reply == QMessageBox.Yes: self.force_quit_and_restart()
-            else: QMessageBox.information(self, "Language", T("lang_restart"))
+
+            prompt_text = T("lang_prompt") if lang != "la" else "Lingua mutata est. Visne iterum incipere?"
+            reply = QMessageBox.question(self, T("info_btn"), prompt_text, QMessageBox.Yes | QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                self.force_quit_and_restart()
+            else:
+                QMessageBox.information(self, "Language", T("lang_restart"))
 
     def force_quit_and_restart(self):
         self.ipc_server.stop()
@@ -985,26 +849,6 @@ class AquaControlUI(QMainWindow):
             self.tray_icon.showMessage("AquaControl", T("tray_prof_activated").format(p=p_name), QSystemTrayIcon.Information, 1500)
         else: self.updating_combo = False
 
-    def check_running_processes(self):
-        if not self.chk_autoswitch.isChecked(): return
-        running_target, detected_proc = None, None
-        for proc_name, prof_name in global_config.get("process_profiles", {}).items():
-            try:
-                if subprocess.run(["pgrep", "-f", proc_name], capture_output=True).returncode == 0:
-                    running_target, detected_proc = prof_name, proc_name
-                    break
-            except: pass
-
-        if running_target and self.active_auto_profile != running_target:
-            if self.active_auto_profile is None: self.pre_auto_profile = self.combo_profiles.currentText()
-            self.load_profile_by_name(running_target)
-            self.active_auto_profile = running_target
-            self.tray_icon.showMessage("Auto-Switch", T("tray_proc_detected").format(proc=detected_proc, prof=running_target), QSystemTrayIcon.Information, 2000)
-        elif not running_target and self.active_auto_profile is not None:
-            if self.pre_auto_profile: self.load_profile_by_name(self.pre_auto_profile)
-            self.active_auto_profile = None
-            self.tray_icon.showMessage("Auto-Switch", T("tray_proc_ended"), QSystemTrayIcon.Information, 2000)
-
     def toggle_osd_from_tray(self):
         self.chk_osd.setChecked(not self.chk_osd.isChecked())
 
@@ -1046,17 +890,6 @@ class AquaControlUI(QMainWindow):
             if self.isHidden(): self.showNormal()
             else: self.hide()
 
-    @Slot(bool)
-    def on_prepare_for_sleep(self, sleeping: bool):
-        """
-        Intercetta il segnale DBus PrepareForSleep.
-        sleeping = True (sospensione in corso)
-        sleeping = False (risveglio dalla sospensione)
-        """
-        if not sleeping:
-            if global_config.get("fw360_apply_on_resume", False):
-                QTimer.singleShot(3000, self.farbwerk360_tab.apply_silent_startup)
-
     def closeEvent(self, event):
         if getattr(self, 'is_quitting', False):
             event.accept()
@@ -1072,14 +905,17 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
 
-    app.setWindowIcon(QIcon("aquacontrol.png"))
+    is_imperium = global_config.get("lang") == "la"
+    icon_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "icons", "imperium-edition.svg") if is_imperium else "aquacontrol.png"
+
+    app.setWindowIcon(QIcon(icon_file))
     app.setDesktopFileName("aquacontrol")
 
     initial_opacity = global_config.get("window_opacity", 180)
-    app.setStyleSheet(get_dynamic_style(initial_opacity))
+    app.setStyleSheet(get_dynamic_style(initial_opacity, is_imperium))
 
     win = AquaControlUI()
-    win.setWindowIcon(QIcon("aquacontrol.png"))
+    win.setWindowIcon(QIcon(icon_file))
 
     if "--minimized" not in sys.argv:
         win.show()

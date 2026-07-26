@@ -257,7 +257,7 @@ TRANSLATIONS = {
         "fw360_max_strips": "Numero massimo di strisce raggiunto (20).",
         "fw360_strips": "Strisce LED virtuali",
         "info_dialog_header": """
-        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 4.0.0</h2>
+        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 5.0.0</h2>
         <p style='margin-top: 0;'><b>Maintainer:</b> Raffaele Schiavone<br>Progetto indipendente, rilasciato sotto licenza GPLv3.</p>
         """,
         "info_dialog_warning": """
@@ -506,7 +506,7 @@ TRANSLATIONS = {
         "fw360_max_strips": "Maximum number of strips reached (20).",
         "fw360_strips": "Virtual LED strips",
         "info_dialog_header": """
-        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 4.0.0</h2>
+        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 5.0.0</h2>
         <p style='margin-top: 0;'><b>Maintainer:</b> Raffaele Schiavone<br>Independent project, GPLv3 license.</p>
         """,
         "info_dialog_warning": """
@@ -756,7 +756,7 @@ TRANSLATIONS = {
         "fw360_strips": "Bandes LED virtuelles",
         "fw360_max_strips": "Maximum de 20 bandes atteint.",
         "info_dialog_header": """
-        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 4.0.0</h2>
+        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 5.0.0</h2>
         <p style='margin-top: 0;'><b>Mainteneur :</b> Raffaele Schiavone<br>Projet indépendant, licence GPLv3.</p>
         """,
         "info_dialog_warning": """
@@ -1006,7 +1006,7 @@ TRANSLATIONS = {
         "fw360_strips": "Tiras LED virtuales",
         "fw360_max_strips": "M\u00e1ximo de 20 tiras alcanzado.",
         "info_dialog_header": """
-        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 4.0.0</h2>
+        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 5.0.0</h2>
         <p style='margin-top: 0;'><b>Mantenedor:</b> Raffaele Schiavone<br>Proyecto independiente, licencia GPLv3.</p>
         """,
         "info_dialog_warning": """
@@ -1254,7 +1254,7 @@ TRANSLATIONS = {
         "fw360_timeline_help": "Ziehen zum Verschieben · Rechtsklick zum Löschen · Doppelklick zum Hinzufügen",
         "fw360_max_strips": "Maximale Anzahl an Streifen erreicht (20).",
         "info_dialog_header": """
-        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 4.0.0</h2>
+        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 5.0.0</h2>
         <p style='margin-top: 0;'><b>Betreuer:</b> Raffaele Schiavone<br>Unabhängiges Projekt, GPLv3-Lizenz.</p>
         """,
         "info_dialog_warning": """
@@ -1503,7 +1503,7 @@ TRANSLATIONS = {
         "fw360_timeline_help": "Перетащите для перемещения · правый клик для удаления · двойной клик для добавления",
         "fw360_max_strips": "Достигнуто максимальное количество лент (20).",
         "info_dialog_header": """
-        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 4.0.0</h2>
+        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 5.0.0</h2>
         <p style='margin-top: 0;'><b>Сопровождающий:</b> Raffaele Schiavone<br>Независимый проект, лицензия GPLv3.</p>
         """,
         "info_dialog_warning": """
@@ -1752,7 +1752,7 @@ TRANSLATIONS = {
         "fw360_timeline_help": "拖动以移动 · 右键单击以删除 · 双击以添加",
         "fw360_max_strips": "已达到最大灯带数量 (20)。",
         "info_dialog_header": """
-        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 4.0.0</h2>
+        <h2 style='color: #00e5ff; margin-bottom: 5px; margin-top: 0;'>AquaControl 5.0.0</h2>
         <p style='margin-top: 0;'><b>维护者:</b> Raffaele Schiavone<br>独立项目，GPLv3 许可证。</p>
         """,
         "info_dialog_warning": """
@@ -1763,9 +1763,152 @@ TRANSLATIONS = {
         制造商使用封闭协议。官方更新可能会不可预测地改变数据结构，从而永久破坏与 AquaControl 和其他开源软件的兼容性。
         </p>
         """
+    },
+
+    "la": {
+        "app_title": "AquaControl - Imperium Edition",
+        "tab_dash": "Tabula Instrumentorum",
+        "fan_tab_title": "Ventilabrum",
+        "tab_hw_channels": "Machinae",
+        "tab_farbwerk360": "Lumina",
+        "sidebar_sec": "Praesidium",
+        "sidebar_osd": "Tabula Fluctuans",
+        "tab_settings": "Praecepta",
+        "tab_guide": "Lexicon",
+        "profiles": "Formae",
+        "save_btn": "Servare",
+        "mode_auto": "Sua Sponte",
+        "mode_manual": "Manus",
+        "fixed": "Fixus",
+        "current_val": "(Nunc: {v}°G)",
+        "err_sensor": "Nihil",
+        "lang_prompt": "Lingua mutata est. Visne iterum incipere?",
+
+        # Dashboard
+        "dash_profile": "Forma Electa",
+        "dash_manage_hidden": "Occulta Curare",
+        "dash_sys_sensors": "Sensus Machinae",
+        "dash_12v_out": "Venti (XII V)",
+        "dash_aqua_sensors": "Sensus Aquae",
+        "hw_flow_sensors_title": "Sensus Fluminis",
+
+        # OSD Settings
+        "osd_title": "Praecepta Tabulae Fluctuantis",
+        "osd_info": "Conformatio imaginis deorum super mensam tuam.",
+        "osd_global": "Praecepta Totiva",
+        "osd_show": "Monstrare Tabulam",
+        "osd_scale": "Magnitudo:",
+        "osd_aesthetic": "Species",
+        "osd_opacity": "Pelluciditas:",
+        "osd_max_rows": "Ordines:",
+        "osd_col_names": "Color Nominum:",
+        "osd_col_values": "Color Numerorum:",
+        "osd_col_badges": "Color Signorum:",
+        "osd_btn_color": "Mutare",
+        "osd_font_style": "Litterae:",
+        "osd_btn_font": "Eligere",
+        "osd_sensors_group": "Sensus",
+        "osd_save": "Servare Tabulam",
+
+        # Security Settings
+        "sec_title": "Praesidium",
+        "sec_info": "Systema automatice intervenit in casu ruinae machinae.",
+        "sec_global": "Actiones Subitae",
+        "sec_save": "Servare Praesidium",
+        "sec_sound": "Sonus",
+        "sec_osd_flash": "Fulgur Tabulae (Ruber)",
+        "sec_shutdown": "Extinctio Coacta",
+        "sec_cmd_custom": "Mandatum Exequi:",
+        "sec_delay": "↳ Mora ante extinctionem:",
+        "sec_delay_alarm": "Mora Tumultus:",
+        "sec_rpm": "Tumultus RPM (≤):",
+        "sec_temp": "Tumultus Caloris (≥):",
+        "sec_pwm": "Tumultus Potentiae (≤):",
+        "sec_volt": "Tumultus Tensionis (≤):",
+
+        # Generici
+        "channel": "Canalis",
+        "sensor": "Sensus:",
+        "mode": "Modus:",
+        "hysteresis": "Mora",
+        "placeholder": "Ex. 'Ludus'",
+        "hw_ctrl_mode": "Modus Gubernandi:",
+        "hw_start_boost": "Impetus Subitus",
+        "hw_boost_time": "Spatium:",
+        "hw_min_power": "Vis Minima:",
+        "hw_flow_type": "Genus Sensus:",
+        "hw_flow_fluid": "Genus Liquoris:",
+        "hw_flow_type": "Genus Sensus:",
+        "hw_flow_fluid": "Genus Liquoris:",
+        "hw_flow_fitting": "Genus Fistulae:",
+        "hw_flow_calib": "Aestimatio:",
+        "hw_channels_info": "Pone terminos physicos. Minima potentia machinam haerere vetat. Impetus subitus inertiam frangit.",
+        "autoswitch": "Mutatio Formae Automatica",
+        "proc_title": "Processus Iungere",
+        "proc_ph": "Ex. vapor (steam)",
+        "btn_add": "Addere",
+        "btn_remove": "Delere",
+        "set_sys_pref": "Praeferentiae",
+        "set_lang": "Lingua:",
+        "ui_opacity": "Pelluciditas:",
+        "autostart": "Sua sponte incipere",
+        "start_min": "Incipere parvus",
+        "close_to_tray": "In tabulam claudere",
+        "profile_group": "Formae",
+        "hide_curve_params": "Parametra Caelare",
+        "show_curve_params": "Parametra (TMP: {tm}-{tM} °G  |  PWR: {pm}-{pM} %)",
+        "hide_graph_ctrls": "Gubernacula Caelare",
+        "show_graph_ctrls": "Gubernacula ({min}-{max} °G)",
+        "t_min": "Calor Min:",
+        "t_max": "Calor Max:",
+        "p_min": "Vis Min:",
+        "p_max": "Vis Max:",
+        "gamma": "Linea:",
+
+        #System Tray
+
+        "tray_toggle_osd": "Tabulam Ostendere/Caelare",
+        "tray_show": "Imperium Ostendere",
+        "tray_change_profile": "Formae",
+        "tray_quit": "Exire",
+
+        # Lumina (Farbwerk 360)
+        "fw360_subtitle": "Configura canales RGBpx assignando taenias virtuales. Si lumina physica recumbunt, systema priorem taeniam praefert.",
+        "fw360_timeline_help": "Trahe ut moveas · Dextrum preme ut deleas · Bis preme ut addas",
+        "fw360_add_strip": "Addere taeniam",
+        "fw360_clear_channel": "Canalem purgare",
+        "fw360_save_device": "In memoriam machinae servare",
+        "fw360_brightness": "Claritas summa:",
+        "fw360_value": "Claritas",
+        "fw360_palette": "Colores",
+        "fw360_general": "Praecepta generalia",
+        "fw360_pref_desc": "Gubernatio in tempore vero: his utere si mavis machinam per programmatum regere, ne memoria EEPROM assiduis scriptionibus atteratur.",
+        "fw360_apply_on_start": "Formam impone cum programma incipit",
+        "fw360_apply_on_resume": "Formam impone cum machina e somno surgit",
+        "fw360_strips": "Taeniae virtuales",
+        "fw360_no_strips_hint": "Bis preme vel «+» ut taeniam addas",
+        "fw360_flash_ok": "In memoria servatum",
+        "fw360_flash_tip": "Colores perpetuos facit. Parce utere: memoria fulgurea limitatos cyclos scriptionis habet.",
+        "fw360_ch": "Fascis Lucis {i}",
+
+        #Info Dialog
+        "info_btn": "Tabulae Publicae",
+        "info_dialog_header": """
+        <h2 style='color: #FFD700; margin-bottom: 5px; margin-top: 0;'>AquaControl - Imperium Edition</h2>
+        <p style='margin-top: 0;'><b>Dictator Perpetuo:</b> Raffaele Schiavone<br>Proiectum liberum, sub lege GPLv3.</p>
+        """,
+        "info_dialog_warning": """
+        <p style='color: #ffc107; font-size: 14px;'><b>Monitum de Concordantia</b></p>
+        <p style='font-size: 13px; line-height: 1.5; color: #cdd6f4;'>
+        Comprobatum in Aquaero VI LT (<b>Firmware MMCIV</b>) et Farbwerk CCCLX (<b>Firmware MXXV</b>).<br><br>
+        <span style='color: #f38ba8; font-weight: bold;'>Noli renovare firmware machinae.</span><br>
+        Fabricator utitur legibus clausis. Renovationes publicae possunt structuram datorum sine praenuntiatione mutare et concordantiam cum AquaControl in aeternum frangere.
+        </p>
+        """
     }
 }
 
 def T(key):
     lang = global_config.get("lang", "en")
-    return TRANSLATIONS.get(lang, TRANSLATIONS["en"]).get(key, key)
+    lang_dict = TRANSLATIONS.get(lang, TRANSLATIONS["en"])
+    return lang_dict.get(key, TRANSLATIONS["en"].get(key, key))

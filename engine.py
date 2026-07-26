@@ -502,7 +502,7 @@ class AquaeroEngine:
 
     def trigger_emergency_shutdown(self, reason="Unknown", value=0.0, delay_seconds=0):
 
-        log_dir = os.path.expanduser("~/.config/aquacontrol")
+        log_dir = "/var/lib/aquacontrol"
         os.makedirs(log_dir, exist_ok=True)
 
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -513,10 +513,21 @@ class AquaeroEngine:
             with open(os.path.join(log_dir, "emergency_log.txt"), "a") as f:
                 f.write(log_message)
 
-            # 2. Generazione del flag diagnostico per il prossimo riavvio
+            # 2. Biglietto diagnostico per il prossimo login. Accumuliamo un contatore
+            #    (non sovrascriviamo) così l'agent può dire "spento N volte" anche se la
+            #    GUI non è mai stata riaperta tra un'emergenza e l'altra. Manteniamo le
+            #    chiavi reason/value/timestamp per retro-compatibilità con i lettori vecchi.
             pending_file = os.path.join(log_dir, "emergency_pending.json")
+            prev_count = 0
+            try:
+                if os.path.exists(pending_file):
+                    with open(pending_file, "r") as pf:
+                        prev_count = json.load(pf).get("count", 0)
+            except Exception:
+                prev_count = 0
             with open(pending_file, "w") as f:
-                json.dump({"reason": reason, "value": value, "timestamp": timestamp}, f, indent=4)
+                json.dump({"count": prev_count + 1, "reason": reason,
+                           "value": value, "timestamp": timestamp}, f, indent=4)
         except Exception:
             # In emergenza non blocchiamo l'arresto se la scrittura fallisce
             pass
@@ -526,8 +537,8 @@ class AquaeroEngine:
         if delay_seconds > 0:
             time.sleep(delay_seconds)
 
-        # Spegnimento forzato tramite escalation sudoers
-        subprocess.Popen(["sudo", "systemctl", "poweroff", "--force", "--force"])
+        # Spegnimento del sistema
+        subprocess.Popen(["systemctl", "poweroff"])
 
     def set_channel_mode_hid(self, channel, mode):
         """Cambia modalità (DC o PWM) tramite protocollo USB raw."""

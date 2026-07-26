@@ -1,21 +1,64 @@
-# 💧 AquaControl 4.0
+# 💧 AquaControl 5.0
 
 <p align="center">
   <img width="100%" alt="AquaControl Desktop Environment" src="https://github.com/user-attachments/assets/efbfd2c3-da86-43a8-8a79-99fb95e6eaa7" />
 </p>
 
-### Architettura e scopo del progetto
+### Scopo del progetto
 
-AquaControl è una suite di controllo nativa per Linux, scritta specificamente per l'ecosistema Aquacomputer, programmata per la logica dell'Aquaero 6 LT e del Farbwerk 360. AquaControl è un programma che mira a offrire le stesse funzionalità della suite ufficiale per la gestione di impianti a liquido custom, ponendosi come alternativa Linux al famoso CoolerControl, che supporta molti più dispositivi ma non offre i controlli avanzati di questo software. Oltre a questo, attualmente AquaControl è l'unico software Linux nativo che supporta la gestione LED del Farbwerk 360.
+AquaControl è una suite di controllo nativa per Linux, scritta specificamente per
+l'ecosistema Aquacomputer e per la logica dell'Aquaero 6 LT e del Farbwerk 360. Mira a
+offrire le stesse funzionalità della suite ufficiale per la gestione di impianti a liquido
+custom, ponendosi come alternativa Linux al noto CoolerControl che supporta molti più
+dispositivi ma non offre i controlli avanzati di questo software. È inoltre, a oggi, l'unico
+software Linux nativo a supportare la gestione dei LED del Farbwerk 360.
 
-Il software si appoggia in parte al driver ufficiale del kernel Linux (`aquacomputer_d5next` di Aleksa Savic) per la lettura dei sensori esposti in `/sys/class/hwmon`. Sopra queste letture, AquaControl introduce il suo motore di calcolo indipendente per la scrittura di valori da 0 a 255 in tempo reale per pilotare l'Aquaero 6 LT.
+### Lettura dei sensori e motore di calcolo
 
-### Reverse Engineering dei Protocolli USB
+Per la lettura dei sensori esposti in `/sys/class/hwmon`, AquaControl si appoggia in parte al
+driver ufficiale del kernel Linux (`aquacomputer_d5next` di Aleksa Savic). Sopra queste
+letture innesta un motore di calcolo indipendente, che scrive in tempo reale i valori da 0 a
+255 con cui pilota i quattro canali dell'Aquaero 6 LT.
 
-Poiché il modulo del kernel non fornisce la possibilità di cambiare il tipo di erogazione (PWM/DC) dei quattro canali 12 volt della scheda e nemmeno di gestire la calibrazione dei sensori di flusso, ho utilizzato Wireshark per fare reverse engineering e ho integrato dei moduli per la comunicazione diretta con la scheda tramite `python-hidapi`. Attraverso la stessa procedura sono riuscito a far funzionare il Farbwerk 360 e catturare anche il payload necessario per il salvataggio delle impostazioni sulla EEPROM della scheda.
-Diversamente dal Farbwerk 360, AquaControl non integra il salvataggio delle impostazioni sulla EEPROM dell'Aquaero 6 LT, quindi funziona in modalità override in tempo reale, per scelta dell'autore.
+### Reverse engineering dei protocolli USB
 
-## 🚀 Funzionalità di AquaControl 4.0
+Il modulo del kernel non permette di cambiare il tipo di erogazione (PWM/DC) dei quattro
+canali 12 V, né di gestire la calibrazione dei sensori di flusso. Per colmare queste lacune
+ho analizzato il traffico USB con Wireshark e ho integrato dei moduli che comunicano
+direttamente con la scheda tramite `python-hidapi`. Con lo stesso metodo sono riuscito a far
+funzionare il Farbwerk 360 e a catturare il payload necessario per salvare le impostazioni
+nella sua EEPROM.
+
+A differenza del Farbwerk 360, AquaControl non salva le impostazioni nella EEPROM
+dell'Aquaero 6 LT: lavora in modalità override in tempo reale, per scelta dell'autore.
+
+### Architettura: i servizi in background
+
+AquaControl adotta un'architettura client/server basata su due servizi in background, così le
+sue funzioni essenziali continuano a lavorare anche quando l'interfaccia grafica è chiusa.
+
+**Il servizio root (`aquacontrold`)** si occupa del lavoro sull'hardware. Gira con i
+privilegi di sistema, si avvia all'accensione (ancora prima del login), e controlla i
+quattro canali dell'Aquaero 6 LT secondo il profilo scelto nell'interfaccia. Applica anche le
+regole di sicurezza (soglie di temperatura, RPM, flusso e tensione) e, se una condizione
+critica persiste, esegue lo spegnimento d'emergenza. Lo stesso servizio pilota il Farbwerk
+360, applicando il profilo di colori ed effetti salvato all'avvio, alla ripresa dalla
+sospensione o ogni volta che lo modifichi nell'interfaccia. Poiché lavora in modo
+indipendente dall'interfaccia grafica, queste funzioni operano senza alcun utente connesso e
+senza finestre aperte — per esempio il profilo del Farbwerk viene applicato all'avvio del
+sistema, interamente in background, senza che AquaControl venga mai aperto.
+
+**Il servizio utente (`aquacontrol-agent`)** gira all'interno della sessione desktop e parte
+al login. 
+Quando scatta un allarme mostra un avviso, riproduce un suono ed esegue subito il comando
+personalizzato che hai definito nell'interfaccia, per esempio poco prima che il servizio
+root proceda con lo spegnimento forzato. Mostra inoltre un riepilogo diagnostico dopo uno
+spegnimento forzato, così scopri sempre cos'è successo e perché, anche se nel frattempo non
+hai più riaperto l'interfaccia. In aggiunta, il demone utente gestisce anche la funzionalità
+di autoswitch tra un profilo e l'altro, cosi' da permettere il cambio del profilo in base all'
+apertura di uno specifico programma anche quando la GUI e' chiusa.
+
+## 🚀 Funzionalità di AquaControl 5.0
 
 <p align="center">
   <img width="100%" alt="AquaControl Dashboard" src="https://github.com/user-attachments/assets/cd41c603-876e-483f-8d31-5eeeb5d0464f" />
@@ -26,7 +69,7 @@ Diversamente dal Farbwerk 360, AquaControl non integra il salvataggio delle impo
 - **Controllo PWM/DC:** Come spiegato sopra, switch a caldo bypassando le limitazioni del kernel.
 - **Calibrazione Sensori di Flusso:** Possibilità di calibrare i valori di imp/L in base al tipo di sensore utilizzato, al fluido refrigerante e al tipo di raccordo. È possibile impostare il parametro manualmente per sensori non in elenco come nel software originale.
 
-- **Gestione Curve e Controllo Potenza:** Il software permette di gestire l'erogazione di ogni canale attraverso quattro modalità distinte:
+- **Gestione Curve:** Il software permette di gestire l'erogazione di ogni canale attraverso quattro modalità distinte:
   - **Modalità Automatica:** Creazione di una curva di erogazione basata su parametri impostabili dall'utente (Temperatura minima/massima, Potenza minima/massima e Curvatura/Gamma).
   - **Modalità Manuale:** Impostazione della curva di erogazione punto per punto tramite un grafico interattivo.
   - **Modalità PID:** Utilizzo di un algoritmo (Proporzionale, Integrale, Derivativo) per variare dinamicamente l'erogazione di potenza al fine di mantenere una temperatura target costante su un sensore a scelta dell'utente. Include 3 comportamenti preimpostati (*Lento, Normale, Veloce*) e una modalità manuale.
@@ -84,21 +127,37 @@ Il produttore utilizza protocolli chiusi. Gli aggiornamenti ufficiali possono al
    git clone https://github.com/raffaele-90/aquacontrol.git
    ```
 
-2. Apri il terminale nella cartella dei sorgenti appena clonata ed esegui il comando:
+2. Apri il terminale nella cartella dei sorgenti appena clonata e compila il pacchetto:
 
    ```bash
+   cd aquacontrol
    makepkg -si
    ```
 
-   Il sistema compilerà il pacchetto, configurerà i permessi hardware della porta USB (udev), applicherà una regola Sudoers per garantire lo spegnimento d'emergenza e installerà l'applicazione risolvendo automaticamente le dipendenze necessarie (come `python-hidapi`).
+   Questo compila e installa l'applicazione, crea il gruppo di sistema `aquacontrol` e la cartella di configurazione condivisa, e risolve automaticamente le dipendenze necessarie (come `python-hidapi`).
 
-3. Se utilizzi una scheda video NVIDIA e desideri visualizzarne i dati di carico e temperatura, installa il pacchetto aggiuntivo da AUR/pacman: 
+3. In linea con le convenzioni di Arch Linux, il pacchetto **non** abilita i servizi né modifica il tuo sistema da solo. Completa la configurazione con:
+
+   ```bash
+
+   sudo systemctl enable --now aquacontrold.service
+
+   systemctl --user enable --now aquacontrol-agent.service
+
+   sudo usermod -aG aquacontrol "$USER"
+   ```
+
+   Poi esegui il **logout e rientra** (o riavvia) affinché l'aggiunta al gruppo abbia effetto.
+
+4. Se utilizzi una scheda video NVIDIA e desideri visualizzarne i dati di carico e temperatura, installa il pacchetto aggiuntivo da AUR/pacman:
 
    ```bash
    sudo pacman -S python-pynvml
    ```
 
 ### Debian / Ubuntu / Linux Mint
+
+> **Compatibilità.** Il pacchetto `.deb` richiede **Debian 13 (Trixie) o Ubuntu 24.10 (o versioni successive)**, oppure una distribuzione derivata basata su di esse. Il motivo è PySide6, la libreria dell'interfaccia grafica, presente nei repository ufficiali solo a partire da queste versioni. Sulle release precedenti — incluse le attuali LTS di Ubuntu (24.04 e 22.04) e le versioni di Linux Mint basate su di esse — PySide6 non è pacchettizzato: il `.deb` **non si installerà**, perché `apt` non riuscirà a soddisfare le dipendenze. Su queste distribuzioni occorre installare da sorgente e procurarsi PySide6 manualmente (ad esempio con `pip`, preferibilmente in un ambiente virtuale).
 
 1. Scarica l'ultima versione del pacchetto `.deb` dalla pagina [Releases](https://github.com/raffaele-90/aquacontrol/releases) del repository.
 

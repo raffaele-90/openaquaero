@@ -461,6 +461,31 @@ GUIDE_TRANSLATIONS = {
         <p style="font-size: 14px;"><b>2. 全局操作和关机等待</b><br>
         紧急系统触发后，软件将执行请求的操作（通知、声音警报、自定义脚本执行）。如果您结合自定义命令（例如，用于保存打开的文件的脚本）激活了<i>紧急强制关机</i>，则<b>等待命令执行</b>选项允许您强制系统在强制切断电源之前等待 <b>X</b> 秒，从而为脚本留出完成其任务的时间。</p>
     """,
+
+    "la": f"""
+        <h2 style="font-size: 18px; color: #FFD700; margin-top: 0; margin-bottom: 10px;">Manifestum Imperiale</h2>
+
+        <p style="font-size: 14px; color: #a6adc8; margin-bottom: 16px;">Hail, web wanderers, Gatekeepers of perfect code, and keyboard warriors of various kinds. If you are reading this digital parchment, chances are you have scoured the repository looking for the least elegant line of code to point me out as incompetent, to rant against "AI-generated trash", or to indignantly report some bug due to my lack of omniscience regarding Linux or programming.</p>
+        <p style="font-size: 14px; color: #a6adc8; margin-bottom: 16px;">To you I say: <i>Errare humanum est, perseverare in Windows diabolicum.</i></p>
+
+        <p style="font-size: 14px; color: #a6adc8; margin-bottom: 12px;">Let's get a couple of things straight. I am not a Senior programmer. I am learning. This project is born from the mud and blood of pure and simple frustration. The frustration of having spent my sesterces on magnificent hardware only to find myself chained to that Windows bloatware just to be able to use it.</p>
+
+        <p style="font-size: 14px; color: #a6adc8; margin-bottom: 12px;">I could have written a trivial Python script for my own personal use, just to make my fans spin the way I wanted, and kept it on my PC. Et instead, no. I have worked from January 2026 to today, sacrificing countless hours (now counted in entire 24-hour weeks) and paying out of my own pocket for artificial oracles just to reverse-engineer closed hardware, generating code based on my logic, which I still had to personally test and review by hand. Do I use the animated RGB effects of the Farbwerk 360? No, static color was enough for me. But I used Wireshark to capture the payloads and decipher the effects solely to offer you all an Open Source alternative on Linux that currently no one (not even the excellent CoolerControl) is capable of managing in this way. And all this <i>gratis et amore dei</i>, at a pure loss.</p>
+
+        <p style="font-size: 14px; color: #a6adc8; margin-bottom: 12px;">"Why doesn't AquaControl support other hardware?" I don't own it at the moment, ergo I cannot write code and test it myself. Furthermore, the parent company uses closed protocols. At the next firmware update, these gentlemen could change a comma in the code and send all this work of mine down the drain in a second. Enjoy this freedom while it lasts.</p>
+
+        <p style="font-size: 14px; color: #FFD700; font-weight: bold; margin-top: 20px; margin-bottom: 8px;">One last note for the historical pedants and grammar nazis: the "Imperium" interface is a prank, a joke, a divertissement.</p>
+
+        <ul style="margin-top: 5px; margin-bottom: 15px;">
+            <li style="font-size: 14px; color: #a6adc8; margin-bottom: 8px;"><b style="color: #FFD700;">Roman numerals with a comma</b> (e.g., XII,NIV Volt) DO NOT exist. Zero (represented here by the 'N' for Nihil) was not conceived.</li>
+            <li style="font-size: 14px; color: #a6adc8; margin-bottom: 8px;"><b style="color: #FFD700;">Degrees of Galen (°G)</b> DO NOT exist. No centurion two thousand years ago had to measure the thermal deltas of a liquid cooling loop for a CPU.</li>
+            <li style="font-size: 14px; color: #a6adc8; margin-bottom: 8px;"><b style="color: #FFD700;">Latin translations</b> in the IT field are, obviously, macaronic concoctions.</li>
+        </ul>
+
+        <p style="font-size: 14px; color: #a6adc8; margin-bottom: 12px;">The idea of restructuring the entire software to use historically accurate Roman fractions instead of decimals would have been pure madness. It's a compromise: it makes you laugh, it makes historians turn up their noses, but it works and it's readable. If you can't grasp the irony and get outraged by the philological inaccuracy of my translations or the use of AI... I'll get over it.</p>
+
+        <p style="font-size: 14px; color: #a6adc8; margin-bottom: 12px;">If the software is useful to you, you're welcome. If it disgusts you, open your favorite editor and write your own daemon from scratch. <b>Roma locuta, causa finita.</b></p>
+    """,
 }
 
 def get_guide_text():

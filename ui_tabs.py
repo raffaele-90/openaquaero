@@ -28,9 +28,12 @@ from PySide6.QtGui import QColor, QFont, QCursor, QIcon, QPainter, QConicalGradi
 
 from config_manager import global_config, save_config
 from i18n import T
-from farbwerk360_effects import EFFECTS
-from ui_widgets import format_temp, SparklineWidget, PWMFillBar
+from farbwerk360_effects import EFFECTS, Farbwerk360EffectsEngine
+from ui_widgets import format_temp, SparklineWidget, PWMFillBar, to_roman, RomanSpinBox, RomanDoubleSpinBox
 from guide_texts import get_guide_text
+
+def get_accent():
+    return "#FFD700" if global_config.get("lang") == "la" else "#00e5ff"
 
 FLOW_PRESETS = {
     "User defined": {},
@@ -110,7 +113,7 @@ class DashboardTabWidget(QWidget):
 
         # 2. Etichetta per il testo
         lbl_title = QLabel(T('tab_dash'))
-        lbl_title.setStyleSheet("font-size: 24px; color: #00e5ff; font-weight: bold;")
+        lbl_title.setStyleSheet(f"font-size: 24px; color: {get_accent()}; font-weight: bold;")
         header_layout.addWidget(lbl_title)
 
         header_layout.addSpacing(20)
@@ -265,14 +268,27 @@ class DashboardTabWidget(QWidget):
             hist = histories.get(s_id, [])
 
             if "load" in s_id.lower() or "busy" in s_id.lower():
-                self._add_dash_card(self.lay_sys, name, f"{int(val)} %", "power.svg", row_sys, col_sys, s_id, history_data=hist)
+                if global_config.get("lang") == "la":
+                    val_str = f"{to_roman(int(val))} %"
+                else:
+                    val_str = f"{int(val)} %"
+                self._add_dash_card(self.lay_sys, name, val_str, "power.svg", row_sys, col_sys, s_id, history_data=hist)
+
             elif "_in" in s_id.lower() or "volt" in s_id.lower():
-                self._add_dash_card(self.lay_sys, name, f"{val:.2f} V", "plug.svg", row_sys, col_sys, s_id, history_data=hist)
+                if global_config.get("lang") == "la":
+                    val_str = f"{to_roman(val)} V"
+                else:
+                    val_str = f"{val:.2f} V"
+                self._add_dash_card(self.lay_sys, name, val_str, "plug.svg", row_sys, col_sys, s_id, history_data=hist)
+
             else:
                 self._add_dash_card(self.lay_sys, name, format_temp(val), "system.svg", row_sys, col_sys, s_id, history_data=hist)
 
+            # Incremento delle colonne e delle righe della griglia
             col_sys += 1
-            if col_sys >= num_cols: col_sys = 0; row_sys += 1
+            if col_sys >= num_cols:
+                col_sys = 0
+                row_sys += 1
 
         # 3. Sensori di Flusso
         flow_data = data.get('flows', {})
@@ -290,7 +306,14 @@ class DashboardTabWidget(QWidget):
             if s_id in hidden: continue
 
             hist = histories.get(s_id, [])
-            self._add_dash_card(self.lay_flow, T("hw_flow_sensor_num").format(i=flow_id), f"{val:.1f} L/h", "flow.svg", row_flow, col_flow, s_id, history_data=hist)
+            if global_config.get("lang") == "la":
+                flow_val_str = f"{to_roman(int(val))} L/h"
+            else:
+                flow_val_str = f"{val:.1f} L/h"
+
+            is_la = global_config.get("lang") == "la"
+            flow_title_num = to_roman(flow_id) if is_la else str(flow_id)
+            self._add_dash_card(self.lay_flow, T("hw_flow_sensor_num").format(i=flow_title_num), flow_val_str, "flow.svg", row_flow, col_flow, s_id, history_data=hist)
 
             col_flow += 1
             if col_flow >= num_cols: col_flow = 0; row_flow += 1
@@ -313,7 +336,14 @@ class DashboardTabWidget(QWidget):
             pwm_load = pwm_loads.get(ch_id, 0)
             volt_val = volts.get(ch_id, 0.0)
 
-            self._add_dash_card(self.lay_fans, ch_name, f"{rpm} RPM", "power.svg", row_fans, col_fans, s_id, history_data=hist, pwm_load=pwm_load, sub_value=f"{volt_val:.2f} V")
+            if global_config.get("lang") == "la":
+                rpm_val_str = f"{to_roman(int(rpm))} RPM"
+                volt_str = f"{to_roman(volt_val)} V"
+            else:
+                rpm_val_str = f"{rpm} RPM"
+                volt_str = f"{volt_val:.2f} V"
+
+            self._add_dash_card(self.lay_fans, ch_name, rpm_val_str, "power.svg", row_fans, col_fans, s_id, history_data=hist, pwm_load=pwm_load, sub_value=volt_str)
 
             col_fans += 1
             if col_fans >= num_cols: col_fans = 0; row_fans += 1
@@ -376,7 +406,7 @@ class DashboardTabWidget(QWidget):
 
         # Valore centrale
         lbl_val = QLabel(value)
-        lbl_val.setStyleSheet("color: #00e5ff; font-size: 20px; font-weight: bold; background: transparent; border: none;")
+        lbl_val.setStyleSheet(f"color: {get_accent()}; font-size: 20px; font-weight: bold; background: transparent; border: none;")
         c_layout.addWidget(lbl_val)
 
         if sub_value:
@@ -506,7 +536,7 @@ class SecurityTabWidget(QWidget):
 
             box_delay_alarm = QHBoxLayout()
             lbl_delay_alarm = QLabel(T("sec_delay_alarm"))
-            spin_delay_alarm = QSpinBox()
+            spin_delay_alarm = RomanSpinBox()
             spin_delay_alarm.setRange(0, 60)
             spin_delay_alarm.setSuffix(" s")
             box_delay_alarm.addWidget(lbl_delay_alarm)
@@ -516,7 +546,7 @@ class SecurityTabWidget(QWidget):
 
             box_rpm = QHBoxLayout()
             chk_rpm = QCheckBox(T("sec_rpm"))
-            spin_rpm = QSpinBox()
+            spin_rpm = RomanSpinBox()
             spin_rpm.setRange(0, 5000)
             spin_rpm.setSuffix(" RPM")
             box_rpm.addWidget(chk_rpm)
@@ -526,7 +556,7 @@ class SecurityTabWidget(QWidget):
 
             box_temp = QHBoxLayout()
             chk_temp = QCheckBox(T("sec_temp"))
-            spin_temp = QSpinBox()
+            spin_temp = RomanSpinBox()
             spin_temp.setRange(20, 110)
             spin_temp.setSuffix(" °C")
             box_temp.addWidget(chk_temp)
@@ -536,7 +566,7 @@ class SecurityTabWidget(QWidget):
 
             box_power = QHBoxLayout()
             chk_power = QCheckBox(T("sec_pwm"))
-            spin_power = QSpinBox()
+            spin_power = RomanSpinBox()
             spin_power.setRange(0, 100)
             spin_power.setSuffix(" %")
             box_power.addWidget(chk_power)
@@ -546,7 +576,7 @@ class SecurityTabWidget(QWidget):
 
             box_volt = QHBoxLayout()
             chk_volt = QCheckBox(T("sec_volt"))
-            spin_volt = QDoubleSpinBox()
+            spin_volt = RomanDoubleSpinBox()
             spin_volt.setRange(0.0, 12.0)
             spin_volt.setSingleStep(0.1)
             spin_volt.setDecimals(1)
@@ -584,7 +614,9 @@ class SecurityTabWidget(QWidget):
 
         self.sec_flows = {}
         for i in range(1, 3):
-            lbl_fl = QLabel(T("hw_flow_sensor_num").format(i=i))
+            is_la = global_config.get("lang") == "la"
+            num_str = to_roman(i) if is_la else str(i)
+            lbl_fl = QLabel(T("hw_flow_sensor_num").format(i=num_str))
             lbl_fl.setStyleSheet("font-size: 14px; color: #a6adc8; font-weight: bold; margin-top: 10px;")
             sec_layout.addWidget(lbl_fl)
 
@@ -594,7 +626,7 @@ class SecurityTabWidget(QWidget):
 
             box_delay_flow = QHBoxLayout()
             lbl_delay_flow = QLabel(T("sec_delay_alarm"))
-            spin_delay_flow = QSpinBox()
+            spin_delay_flow = RomanSpinBox()
             spin_delay_flow.setRange(0, 60)
             spin_delay_flow.setSuffix(" s")
             box_delay_flow.addWidget(lbl_delay_flow)
@@ -604,7 +636,7 @@ class SecurityTabWidget(QWidget):
 
             box_flow_alarm = QHBoxLayout()
             chk_flow_alarm = QCheckBox(T("sec_flow_alarm"))
-            spin_flow_alarm = QDoubleSpinBox()
+            spin_flow_alarm = RomanDoubleSpinBox()
             spin_flow_alarm.setRange(0.0, 500.0)
             spin_flow_alarm.setDecimals(1)
             spin_flow_alarm.setSuffix(" L/h")
@@ -659,7 +691,7 @@ class SecurityTabWidget(QWidget):
         self.box_delay = QHBoxLayout()
         self.lbl_delay = QLabel(T("sec_delay"))
         self.lbl_delay.setStyleSheet("color: #6c7086;")
-        self.spin_delay = QSpinBox()
+        self.spin_delay = RomanSpinBox()
         self.spin_delay.setRange(0, 60)
         self.spin_delay.setSuffix(" sec")
         self.spin_delay.setEnabled(False)
@@ -808,7 +840,7 @@ class OSDConfigTabWidget(QWidget):
         header_layout.addWidget(lbl_icon)
 
         lbl_title = QLabel(T('osd_title'))
-        lbl_title.setStyleSheet("font-size: 24px; color: #00e5ff; font-weight: bold;")
+        lbl_title.setStyleSheet(f"font-size: 24px; color: {get_accent()}; font-weight: bold;")
         header_layout.addWidget(lbl_title)
         header_layout.addStretch()
 
@@ -825,16 +857,27 @@ class OSDConfigTabWidget(QWidget):
         g_layout = QHBoxLayout(global_group)
 
         self.main_window.chk_osd = QCheckBox(T("osd_show"))
-        self.main_window.chk_osd.setStyleSheet("font-size: 13px; font-weight: bold; color: #00e5ff;")
+        self.main_window.chk_osd.setStyleSheet(f"font-size: 13px; font-weight: bold; color: {get_accent()};")
         self.main_window.chk_osd.setChecked(global_config.get("osd_export", False))
         self.main_window.chk_osd.toggled.connect(self.main_window.toggle_osd)
 
         self.main_window.combo_osd_scale = QComboBox()
-        self.main_window.combo_osd_scale.addItems(["50%", "75%", "100%", "125%", "150%", "200%"])
+        scales = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+        is_la = global_config.get("lang") == "la"
+        for s in scales:
+            perc = int(s * 100)
+            txt = f"{to_roman(perc)}%" if is_la else f"{perc}%"
+            self.main_window.combo_osd_scale.addItem(txt, s)
         self.main_window.combo_osd_scale.setFixedWidth(80)
+
         current_scale = global_config.get("osd_scale", 1.0)
-        self.main_window.combo_osd_scale.setCurrentText(f"{int(current_scale * 100)}%")
-        self.main_window.combo_osd_scale.currentTextChanged.connect(self.main_window.change_osd_scale)
+        idx = self.main_window.combo_osd_scale.findData(current_scale)
+        if idx >= 0:
+            self.main_window.combo_osd_scale.setCurrentIndex(idx)
+
+        self.main_window.combo_osd_scale.currentIndexChanged.connect(
+            lambda i: self.main_window.change_osd_scale(self.main_window.combo_osd_scale.itemData(i))
+        )
 
         g_layout.addWidget(self.main_window.chk_osd)
         g_layout.addWidget(QLabel(T("osd_scale")))
@@ -860,7 +903,7 @@ class OSDConfigTabWidget(QWidget):
         opacity_layout.addStretch()
         self.slider_opacity.valueChanged.connect(self.update_aesthetic)
 
-        self.spin_max_rows = QSpinBox()
+        self.spin_max_rows = RomanSpinBox()
         self.spin_max_rows.setRange(3, 15)
         self.spin_max_rows.setFixedWidth(60)
         self.spin_max_rows.valueChanged.connect(self.update_aesthetic)
@@ -936,8 +979,10 @@ class OSDConfigTabWidget(QWidget):
 
         for i in range(1, 3):
             comp_id = f"flow_{i}"
-            desc = f"Aquaero: {T('hw_flow_sensor_num').format(i=i)}"
-            placeholder = T('hw_flow_sensor_num').format(i=i)
+            is_la = global_config.get("lang") == "la"
+            num_str = to_roman(i) if is_la else str(i)
+            desc = f"Aquaero: {T('hw_flow_sensor_num').format(i=num_str)}"
+            placeholder = T('hw_flow_sensor_num').format(i=num_str)
             self._add_sensor_row(list_layout, comp_id, desc, placeholder)
 
         sys_sensors = self.main_window.engine.get_available_system_sensors()
@@ -982,7 +1027,10 @@ class OSDConfigTabWidget(QWidget):
         opacity_percent = self.slider_opacity.value()
         real_opacity = int(opacity_percent * 2.55)
         max_rows = self.spin_max_rows.value()
-        self.lbl_opacity_val.setText(f"{opacity_percent} %")
+        if global_config.get("lang") == "la":
+            self.lbl_opacity_val.setText(f"{to_roman(opacity_percent)} %")
+        else:
+            self.lbl_opacity_val.setText(f"{opacity_percent} %")
         self.main_window.osd_window.set_customization(opacity=real_opacity, max_rows=max_rows)
 
         conf = global_config.get("osd_config", {})
@@ -1060,7 +1108,9 @@ class OSDConfigTabWidget(QWidget):
         opacity = conf.get("opacity", 220)
         opacity_percent = int(opacity / 2.55)
         self.slider_opacity.blockSignals(True); self.slider_opacity.setValue(opacity_percent); self.slider_opacity.blockSignals(False)
-        self.lbl_opacity_val.setText(f"{opacity_percent} %")
+
+        is_la = global_config.get("lang") == "la"
+        self.lbl_opacity_val.setText(f"{to_roman(opacity_percent)} %" if is_la else f"{opacity_percent} %")
 
         max_rows = conf.get("max_rows", 8)
         self.spin_max_rows.blockSignals(True); self.spin_max_rows.setValue(max_rows); self.spin_max_rows.blockSignals(False)
@@ -1102,7 +1152,7 @@ class SettingsTabWidget(QWidget):
         header_layout.addWidget(lbl_icon)
 
         lbl_title = QLabel(T('tab_settings'))
-        lbl_title.setStyleSheet("font-size: 24px; color: #00e5ff; font-weight: bold;")
+        lbl_title.setStyleSheet(f"font-size: 24px; color: {get_accent()}; font-weight: bold;")
         header_layout.addWidget(lbl_title)
         header_layout.addStretch()
 
@@ -1133,9 +1183,31 @@ class SettingsTabWidget(QWidget):
         lang_row = QHBoxLayout()
         lang_row.addWidget(QLabel(T("set_lang")))
         self.combo_lang = QComboBox()
-        self.combo_lang.addItems(["it", "en", "de", "fr", "es", "ru", "zh"])
-        self.combo_lang.setCurrentText(global_config.get("lang", "en"))
-        self.combo_lang.currentTextChanged.connect(self.main_window.change_language)
+
+        # Mappatura: (Testo mostrato all'utente, Codice interno usato dal programma)
+        lang_options = [
+            ("it", "it"),
+            ("en", "en"),
+            ("de", "de"),
+            ("fr", "fr"),
+            ("es", "es"),
+            ("ru", "ru"),
+            ("zh", "zh"),
+            ("la (imperium romanum)", "la")
+        ]
+
+        for visible_text, internal_code in lang_options:
+            self.combo_lang.addItem(visible_text, internal_code)
+
+        current_lang = global_config.get("lang", "en")
+        index = self.combo_lang.findData(current_lang)
+        if index >= 0:
+            self.combo_lang.setCurrentIndex(index)
+
+        self.combo_lang.currentIndexChanged.connect(
+            lambda i: self.main_window.change_language(self.combo_lang.itemData(i))
+        )
+
         lang_row.addWidget(self.combo_lang)
         lang_row.addStretch()
         sys_layout.addLayout(lang_row)
@@ -1150,8 +1222,12 @@ class SettingsTabWidget(QWidget):
         saved_opac = global_config.get("window_opacity", 180)
         saved_opac_percent = int(saved_opac / 2.55)
         self.slider_window_opac.setValue(saved_opac_percent)
-        self.lbl_window_opac_val = QLabel(f"{saved_opac_percent} %")
+        self.lbl_window_opac_val = QLabel()
+
+        is_la = global_config.get("lang") == "la"
+        self.lbl_window_opac_val.setText(f"{to_roman(saved_opac_percent)} %" if is_la else f"{saved_opac_percent} %")
         self.lbl_window_opac_val.setStyleSheet("color: #a6adc8; font-weight: bold;")
+
         self.slider_window_opac.valueChanged.connect(self.change_ui_opacity)
         opac_row.addWidget(lbl_opac); opac_row.addWidget(self.slider_window_opac); opac_row.addWidget(self.lbl_window_opac_val)
         sys_layout.addLayout(opac_row)
@@ -1174,14 +1250,21 @@ class SettingsTabWidget(QWidget):
         save_config(global_config)
 
     def change_ui_opacity(self, value):
-        self.lbl_window_opac_val.setText(f"{value} %")
-        real_opacity = int(value * 2.55)
+        # Chiediamo la lingua una sola volta all'inizio
+        is_imperium = global_config.get("lang") == "la"
 
+        if is_imperium:
+            self.lbl_window_opac_val.setText(f"{to_roman(value)} %")
+        else:
+            self.lbl_window_opac_val.setText(f"{value} %")
+
+        real_opacity = int(value * 2.55)
         global_config["window_opacity"] = real_opacity
         save_config(global_config)
 
+        # L'import DEVE restare qui dentro per evitare il circular import
         from main import get_dynamic_style
-        self.main_window.setStyleSheet(get_dynamic_style(real_opacity))
+        self.main_window.setStyleSheet(get_dynamic_style(real_opacity, is_imperium))
 
     def toggle_close_tray(self, checked):
         global_config["close_to_tray"] = checked
@@ -1200,7 +1283,7 @@ class GuideTabWidget(QWidget):
         header_layout.addWidget(lbl_icon)
 
         lbl_title = QLabel(T('tab_guide'))
-        lbl_title.setStyleSheet("font-size: 24px; color: #00e5ff; font-weight: bold;")
+        lbl_title.setStyleSheet(f"font-size: 24px; color: {get_accent()}; font-weight: bold;")
         header_layout.addWidget(lbl_title)
         header_layout.addStretch()
 
@@ -1216,16 +1299,19 @@ class GuideTabWidget(QWidget):
 
         content.setText(get_guide_text())
 
-        content.setStyleSheet("""
-            QLabel {
-                background-color: rgba(35, 38, 41, 225);
+        is_imperium = global_config.get("lang") == "la"
+        bg_color = "rgba(70, 15, 20, 225)" if is_imperium else "rgba(35, 38, 41, 225)"
+
+        content.setStyleSheet(f"""
+            QLabel {{
+                background-color: {bg_color};
                 border: 1px solid rgba(255, 255, 255, 20);
                 border-radius: 8px;
                 padding: 25px;
                 font-size: 14px;
                 line-height: 1.6;
                 color: #e0e0e0;
-            }
+            }}
         """)
 
         scroll.setWidget(content)
@@ -1245,7 +1331,7 @@ class HardwareTabWidget(QWidget):
         header_layout.addWidget(lbl_icon)
 
         lbl_title = QLabel(T('tab_hw_channels'))
-        lbl_title.setStyleSheet("font-size: 24px; color: #00e5ff; font-weight: bold;")
+        lbl_title.setStyleSheet(f"font-size: 24px; color: {get_accent()}; font-weight: bold;")
         header_layout.addWidget(lbl_title)
         header_layout.addStretch()
 
@@ -1303,10 +1389,17 @@ class HardwareTabWidget(QWidget):
             box_min_power = QHBoxLayout()
             slider_min_power = QSlider(Qt.Horizontal)
             slider_min_power.setRange(0, 50)
-            val_min_power = QLabel("0 %")
+            val_min_power = QLabel()
             val_min_power.setFixedWidth(40)
             val_min_power.setStyleSheet("font-weight: bold; color: #00e5ff;")
-            slider_min_power.valueChanged.connect(lambda v, lbl=val_min_power: lbl.setText(f"{v} %"))
+
+            def update_min_power_lbl(v, lbl=val_min_power):
+                is_la = global_config.get("lang") == "la"
+                lbl.setText(f"{to_roman(v)} %" if is_la else f"{v} %")
+
+            slider_min_power.valueChanged.connect(update_min_power_lbl)
+            update_min_power_lbl(0) # Inizializza subito l'etichetta
+
             box_min_power.addWidget(slider_min_power)
             box_min_power.addWidget(val_min_power)
 
@@ -1316,7 +1409,7 @@ class HardwareTabWidget(QWidget):
             chk_boost.setToolTip(T("hw_boost_tooltip"))
             chk_boost.setStyleSheet("font-size: 13px;")
 
-            spin_boost_time = QDoubleSpinBox()
+            spin_boost_time = RomanDoubleSpinBox()
             spin_boost_time.setRange(0.1, 5.0)
             spin_boost_time.setSingleStep(0.1)
             spin_boost_time.setDecimals(1)
@@ -1369,7 +1462,11 @@ class HardwareTabWidget(QWidget):
 
             # Riga 1: Spunta abilitazione
             box_flow_en = QHBoxLayout()
-            chk_flow_en = QCheckBox(T("hw_flow_sensor_num").format(i=i))
+
+            is_la = global_config.get("lang") == "la"
+            num_str = to_roman(i) if is_la else str(i)
+            chk_flow_en = QCheckBox(T("hw_flow_sensor_num").format(i=num_str))
+
             chk_flow_en.setStyleSheet("color: #cdd6f4; font-weight: bold; font-size: 15px;")
             box_flow_en.addWidget(chk_flow_en)
             box_flow_en.addStretch()
@@ -1386,7 +1483,7 @@ class HardwareTabWidget(QWidget):
             combo_fitting = QComboBox()
             combo_fitting.setEnabled(False)
 
-            spin_calib = QSpinBox()
+            spin_calib = RomanSpinBox()
             spin_calib.setRange(1, 3000)
             spin_calib.setSuffix(" imp/l")
             spin_calib.setEnabled(False)
@@ -1481,11 +1578,10 @@ class HardwareTabWidget(QWidget):
                 "boost_time": widgets["spin_boost_time"].value()
             }
 
-            try:
-                if hasattr(self.main_window, 'engine'):
-                    self.main_window.engine.set_channel_mode_hid(int(ch_id), selected_mode)
-            except Exception as e:
-                print(f"Errore USB HID 12V: {e}")
+            # La scrittura HID sull'Aquaero spetta al demone (root), non alla GUI.
+            self.main_window.send_daemon_command(
+                {"action": "set_mode", "channel": int(ch_id), "mode": selected_mode}
+            )
 
         global_config["hardware_channels"] = hw_config
 
@@ -1499,11 +1595,10 @@ class HardwareTabWidget(QWidget):
                 "fitting": widgets["combo_fitting"].currentText(),
                 "impulses": calib_val
             }
-            try:
-                if widgets["chk_enable"].isChecked() and hasattr(self.main_window, 'engine'):
-                    self.main_window.engine.set_flow_calibration_hid(int(flow_id), calib_val)
-            except Exception as e:
-                print(f"Errore USB HID Flusso: {e}")
+            if widgets["chk_enable"].isChecked():
+                self.main_window.send_daemon_command(
+                    {"action": "set_flow_cal", "flow": int(flow_id), "impulses": calib_val}
+                )
 
         global_config["flow_sensors"] = flow_config
         save_config(global_config)
@@ -1539,7 +1634,9 @@ class HardwareTabWidget(QWidget):
             widgets["slider_min_power"].blockSignals(True)
             widgets["slider_min_power"].setValue(val)
             widgets["slider_min_power"].blockSignals(False)
-            widgets["val_min_power"].setText(f"{val} %")
+
+            is_la = global_config.get("lang") == "la"
+            widgets["val_min_power"].setText(f"{to_roman(val)} %" if is_la else f"{val} %")
 
             boost = saved.get("boost_en", False)
             widgets["chk_boost"].blockSignals(True)
@@ -2283,7 +2380,7 @@ class Farbwerk360TabWidget(QWidget):
         header_layout.addWidget(lbl_icon)
 
         lbl_title = QLabel(T('tab_farbwerk360'))
-        lbl_title.setStyleSheet("font-size: 24px; color: #00e5ff; font-weight: bold;")
+        lbl_title.setStyleSheet(f"font-size: 24px; color: {get_accent()}; font-weight: bold;")
         header_layout.addWidget(lbl_title)
         header_layout.addStretch()
 
@@ -2313,7 +2410,9 @@ class Farbwerk360TabWidget(QWidget):
         self.channel_sections = {}
 
         for ch in range(1, self.NUM_CHANNELS + 1):
-            sec = CollapsibleSection(T("fw360_ch").format(i=ch))
+            is_la = global_config.get("lang") == "la"
+            num_str = to_roman(ch) if is_la else str(ch)
+            sec = CollapsibleSection(T("fw360_ch").format(i=num_str))
             self.channel_sections[ch] = sec
 
             bar = QHBoxLayout()
@@ -2383,11 +2482,6 @@ class Farbwerk360TabWidget(QWidget):
         self.chk_apply_on_start.setChecked(global_config.get("fw360_apply_on_start", False))
         self.chk_apply_on_start.toggled.connect(self._general_settings_changed)
 
-        self.chk_apply_on_start = QCheckBox(T("fw360_apply_on_start"))
-        self.chk_apply_on_start.setStyleSheet("color: #cdd6f4;")
-        self.chk_apply_on_start.setChecked(global_config.get("fw360_apply_on_start", False))
-        self.chk_apply_on_start.toggled.connect(self._general_settings_changed)
-
         self.chk_apply_on_resume = QCheckBox(T("fw360_apply_on_resume"))
         self.chk_apply_on_resume.setStyleSheet("color: #cdd6f4;")
         self.chk_apply_on_resume.setChecked(global_config.get("fw360_apply_on_resume", False))
@@ -2417,8 +2511,14 @@ class Farbwerk360TabWidget(QWidget):
         self._refresh_all_timelines()
         self._refresh_editor()
 
+        # Al primo avvio dopo un aggiornamento la config può avere le strisce ma non il
+        # payload: lo popoliamo qui (senza inviare nulla) così il demone può applicare
+        # all'avvio del sistema anche prima che l'utente riapra questa scheda.
+        if "fw360_payload" not in global_config and self.strips:
+            self._persist_to_config()
+
     def _make_spin(self, color):
-        sp = QSpinBox(); sp.setRange(0, 255)
+        sp = RomanSpinBox(); sp.setRange(0, 255)
         sp.setStyleSheet(f"color: {color}; font-weight: bold;")
         sp.valueChanged.connect(self._rgb_changed)
         return sp
@@ -2428,14 +2528,6 @@ class Farbwerk360TabWidget(QWidget):
         global_config["fw360_apply_on_start"] = self.chk_apply_on_start.isChecked()
         global_config["fw360_apply_on_resume"] = self.chk_apply_on_resume.isChecked()
         save_config(global_config)
-
-    def apply_silent_startup(self):
-        """Applica la configurazione corrente alla periferica in modo volatile."""
-        try:
-            eng = self._apply_state_to_engine()
-            eng.commit()
-        except Exception as e:
-            print(f"Errore HID durante l'applicazione silente di Farbwerk 360: {e}")
 
     def _load_from_config(self):
         for item in global_config.get("fw360_strips", []):
@@ -2460,7 +2552,9 @@ class Farbwerk360TabWidget(QWidget):
     def _schedule_save(self):
         self._save_timer.start()
 
-    def _save_now(self):
+    def _persist_to_config(self):
+        """Serializza strisce, luminosità e il payload GIA' COSTRUITO nella config.
+        Il payload lo costruisce la GUI (qui), l'invio alla scheda lo fa il demone."""
         out = []
         for s in self.strips:
             d = {"channel": s["channel"], "start": s["start"],
@@ -2471,18 +2565,35 @@ class Farbwerk360TabWidget(QWidget):
             out.append(d)
         global_config["fw360_strips"] = out
         global_config["fw360_brightness"] = self.global_brightness
+        global_config["fw360_payload"] = self._build_payload_hex()
         try:
             save_config(global_config)
         except Exception:
             pass
-        # anteprima live sul dispositivo (se collegato)
-        try:
-            eng = self.main_window.fw360_engine
-            if eng is not None and eng.is_connected:
-                self._apply_state_to_engine()
-                eng.commit()
-        except Exception:
-            pass
+
+    def _build_payload_hex(self):
+        """Costruisce il payload della Farbwerk dalle strisce correnti SENZA toccare
+        l'USB (nessun commit): serve solo a ricavare i byte che il demone invierà."""
+        eng = Farbwerk360EffectsEngine()
+        eng.all_off()
+        eng.clear_strips()
+        for s in self.strips:
+            mode = s.get("mode", "static")
+            if mode == "static":
+                eng.add_strip(s["channel"], s["start"], s["r"], s["g"], s["b"])
+            else:
+                try:
+                    eng.add_effect(s["channel"], s["start"], mode, **self._effect_kwargs(s))
+                except Exception:
+                    eng.add_strip(s["channel"], s["start"], s["r"], s["g"], s["b"])
+        eng.set_brightness_percent(self.global_brightness)
+        return eng.build_hex()
+
+    def _save_now(self):
+        self._persist_to_config()
+        # Anteprima live: il demone applica adesso (il debounce di 250 ms è già a monte
+        # su _save_timer). La GUI non tocca più l'USB della Farbwerk.
+        self.main_window.send_daemon_command({"action": "apply_rgb"})
 
     def _build_dynamic_editor(self):
         """Costruisce l'editor dinamico, spostato via layout."""
@@ -2976,19 +3087,10 @@ class Farbwerk360TabWidget(QWidget):
         eng = self._apply_state_to_engine()
         self._flash_button(self.btn_save, True, "fw360_flash_ok", "fw360_save_device")
 
-    def apply_silent_startup(self):
-        """
-        Applica la configurazione corrente alla periferica in modo volatile.
-        Eseguito all'avvio del demone/interfaccia per ripristinare lo stato.
-        """
-        try:
-            eng = self._apply_state_to_engine()
-            eng.commit()
-        except Exception as e:
-            print(f"Errore di comunicazione HID in apply_silent_startup: {e}")
-
     def save_to_flash(self):
-        """Applica le strisce e le rende PERMANENTI nella memoria della scheda."""
-        eng = self._apply_state_to_engine()
-        ok = eng.commit() and eng.save_to_flash()
+        """Salva le strisce nella config e chiede al demone di applicarle e renderle
+        PERMANENTI (save_to_flash) sulla scheda. L'invio USB lo fa il demone (root)."""
+        self._persist_to_config()
+        resp = self.main_window.send_daemon_command({"action": "apply_rgb", "save_flash": True})
+        ok = bool(resp) and resp.get("status") == "ok"
         self._flash_button(self.btn_save, ok, "fw360_flash_ok", "fw360_save_device")

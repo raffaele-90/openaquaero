@@ -28,8 +28,56 @@ from PySide6.QtGui import QPainter, QColor, QPen, QPolygonF, QBrush, QFont, QIco
 from config_manager import global_config, save_config
 from i18n import T
 
+def get_accent():
+    return "#FFD700" if global_config.get("lang") == "la" else "#00e5ff"
+
+def to_roman(num):
+    if num == 0 or num == 0.0:
+        return "N"  # N = Nulla/Nihil
+
+    if isinstance(num, float):
+        str_num = f"{num:.2f}".rstrip('0').rstrip('.')
+        if '.' in str_num:
+            v_int_part, v_dec_part = str_num.split('.')
+            v_int = int(v_int_part)
+            v_dec = int(v_dec_part)
+
+            roman_int = to_roman(v_int)
+            roman_dec = to_roman(v_dec)
+            return f"{roman_int},{roman_dec}"
+        else:
+            num = int(num)
+
+    if not isinstance(num, int) or num < 0:
+        return str(num)
+
+    val = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1]
+    syb = ["M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"]
+    roman_num = ''
+    i = 0
+    while num > 0:
+        for _ in range(num // val[i]):
+            roman_num += syb[i]
+            num -= val[i]
+        i += 1
+    return roman_num
+
+class RomanSpinBox(QSpinBox):
+    def textFromValue(self, val):
+        if global_config.get("lang") == "la":
+            return to_roman(val)
+        return super().textFromValue(val)
+
+class RomanDoubleSpinBox(QDoubleSpinBox):
+    def textFromValue(self, val):
+        if global_config.get("lang") == "la":
+            return to_roman(val)
+        return super().textFromValue(val)
+
 def format_temp(celsius_val):
     if celsius_val is None: return T("err_sensor")
+    if global_config.get("lang") == "la":
+        return f"{to_roman(int(celsius_val))} °G" # Gradi di Galeno
     if global_config.get("use_fahrenheit", False):
         return f"{(celsius_val * 1.8) + 32:.1f} °F"
     return f"{celsius_val:.1f} °C"
@@ -61,10 +109,16 @@ class CurveVisualizer(QWidget):
         painter.setRenderHint(QPainter.Antialiasing)
         w = self.width(); h = self.height()
 
+        is_latin = global_config.get("lang") == "la"
+        unit_t = "°G" if is_latin else "°C"
+
+        def fmt_val(v): return to_roman(int(v)) if is_latin else str(int(v))
+        def fmt_float(v): return to_roman(v) if is_latin else f"{v:.1f}"
+
         bg_color = QColor(35, 38, 41, 225) if self.isEnabled() else QColor(20, 22, 24, 225)
         painter.fillRect(0, 0, w, h, bg_color)
 
-        margin_x = 35; margin_y = 25
+        margin_x = 45; margin_y = 25 # Margine x aumentato per far spazio ai numeri romani lunghi
         graph_w = w - (margin_x * 2); graph_h = h - (margin_y * 2)
 
         painter.setPen(QPen(QColor("#313244"), 1, Qt.SolidLine))
@@ -99,12 +153,12 @@ class CurveVisualizer(QWidget):
         polygon.append(QPointF(w - margin_x, h - margin_y))
 
         painter.setPen(Qt.NoPen)
-        brush_color = QColor("#00e5ff") if self.isEnabled() else QColor("#45475a")
+        brush_color = QColor(get_accent()) if self.isEnabled() else QColor("#45475a")
         brush_color.setAlpha(40)
         painter.setBrush(QBrush(brush_color))
         painter.drawPolygon(polygon)
 
-        pen_color = QColor("#00e5ff") if self.isEnabled() else QColor("#555555")
+        pen_color = QColor(get_accent()) if self.isEnabled() else QColor("#555555")
         painter.setPen(QPen(pen_color, 3))
         painter.setBrush(Qt.NoBrush)
         painter.drawPolyline(polygon.mid(1, 51))
@@ -112,10 +166,11 @@ class CurveVisualizer(QWidget):
         painter.setPen(QPen(QColor("#6c7086"), 1))
         font = painter.font(); font.setPointSize(8); font.setBold(False); painter.setFont(font)
 
-        painter.drawText(5, h - margin_y + 4, f"{int(vis_p_min)}%")
-        painter.drawText(5, margin_y + 4, f"{int(vis_p_max)}%")
-        painter.drawText(margin_x - 15, h - 5, f"{int(vis_t_min)}°C")
-        painter.drawText(w - margin_x - 20, h - 5, f"{int(vis_t_max)}°C")
+        # Assi del grafico formattati
+        painter.drawText(5, h - margin_y + 4, f"{fmt_val(vis_p_min)}%")
+        painter.drawText(5, margin_y + 4, f"{fmt_val(vis_p_max)}%")
+        painter.drawText(margin_x - 15, h - 5, f"{fmt_val(vis_t_min)}{unit_t}")
+        painter.drawText(w - margin_x - 20, h - 5, f"{fmt_val(vis_t_max)}{unit_t}")
 
         if self.isEnabled() and self.current_temp > 0.0:
             font.setPointSize(9); font.setBold(True); painter.setFont(font)
@@ -124,15 +179,15 @@ class CurveVisualizer(QWidget):
                 x_pos = margin_x
                 painter.setPen(QPen(QColor("#a6adc8"), 2, Qt.DashLine))
                 painter.drawLine(int(x_pos), margin_y, int(x_pos), h - margin_y)
-                val_attuale = T("current_val").format(v=f"{self.current_temp:.1f}")
-                painter.drawText(int(x_pos) + 8, margin_y + 12, f"< {int(vis_t_min)}°C {val_attuale}")
+                val_attuale = T("current_val").format(v=fmt_float(self.current_temp))
+                painter.drawText(int(x_pos) + 8, margin_y + 12, f"< {fmt_val(vis_t_min)}{unit_t} {val_attuale}")
 
             elif self.current_temp > vis_t_max:
                 x_pos = w - margin_x
                 painter.setPen(QPen(QColor("#ff3333"), 2, Qt.DashLine))
                 painter.drawLine(int(x_pos), margin_y, int(x_pos), h - margin_y)
-                val_attuale = T("current_val").format(v=f"{self.current_temp:.1f}")
-                text = f"> {int(vis_t_max)}°C {val_attuale}"
+                val_attuale = T("current_val").format(v=fmt_float(self.current_temp))
+                text = f"> {fmt_val(vis_t_max)}{unit_t} {val_attuale}"
                 tw = painter.fontMetrics().horizontalAdvance(text)
                 painter.drawText(int(x_pos) - tw - 8, margin_y + 12, text)
 
@@ -154,7 +209,8 @@ class CurveVisualizer(QWidget):
                 painter.setBrush(QBrush(QColor("#00e5ff")))
                 painter.drawEllipse(QPointF(x_temp, y_pwm), 4, 4)
 
-                tooltip_text = f"{self.current_temp:.1f}°C | {int(pwm)}%"
+                # Tooltip formattato
+                tooltip_text = f"{fmt_float(self.current_temp)}{unit_t} | {fmt_val(pwm)}%"
                 font.setPointSize(9); font.setBold(True); painter.setFont(font)
                 metrics = painter.fontMetrics()
                 tw = metrics.horizontalAdvance(tooltip_text)
@@ -293,6 +349,12 @@ class InteractiveCurveWidget(QWidget):
         painter.setRenderHint(QPainter.Antialiasing)
         w = self.width(); h = self.height()
 
+        is_latin = global_config.get("lang") == "la"
+        unit_t = "°G" if is_latin else "°C"
+
+        def fmt_val(v): return to_roman(int(v)) if is_latin else str(int(v))
+        def fmt_float(v): return to_roman(v) if is_latin else f"{v:.1f}"
+
         bg_color = QColor(35, 38, 41, 225) if self.isEnabled() else QColor(20, 22, 24, 225)
         painter.fillRect(0, 0, w, h, bg_color)
 
@@ -304,10 +366,12 @@ class InteractiveCurveWidget(QWidget):
 
         painter.setPen(QPen(QColor("#6c7086"), 1))
         font = painter.font(); font.setPointSize(8); painter.setFont(font)
-        painter.drawText(5, h - self.margin_y + 4, f"{int(self.MIN_P)}%")
-        painter.drawText(5, self.margin_y + 4, f"{int(self.MAX_P)}%")
-        painter.drawText(self.margin_x - 10, h - 5, f"{int(self.MIN_T)}°C")
-        painter.drawText(w - self.margin_x - 10, h - 5, f"{int(self.MAX_T)}°C")
+
+        # Assi del grafico formattati
+        painter.drawText(5, h - self.margin_y + 4, f"{fmt_val(self.MIN_P)}%")
+        painter.drawText(5, self.margin_y + 4, f"{fmt_val(self.MAX_P)}%")
+        painter.drawText(self.margin_x - 10, h - 5, f"{fmt_val(self.MIN_T)}{unit_t}")
+        painter.drawText(w - self.margin_x - 10, h - 5, f"{fmt_val(self.MAX_T)}{unit_t}")
 
         if self.points:
             polygon = QPolygonF()
@@ -322,7 +386,7 @@ class InteractiveCurveWidget(QWidget):
             painter.setBrush(QBrush(brush_color))
             painter.drawPolygon(polygon)
 
-        pen_color = QColor("#00e5ff") if self.isEnabled() else QColor("#555555")
+        pen_color = QColor(get_accent()) if self.isEnabled() else QColor("#555555")
         painter.setPen(QPen(pen_color, 2))
         painter.setBrush(Qt.NoBrush)
 
@@ -338,15 +402,15 @@ class InteractiveCurveWidget(QWidget):
                 x_pos = self.margin_x
                 painter.setPen(QPen(QColor("#a6adc8"), 2, Qt.DashLine))
                 painter.drawLine(int(x_pos), self.margin_y, int(x_pos), h - self.margin_y)
-                val_attuale = T("current_val").format(v=f"{self.current_temp:.1f}")
-                painter.drawText(int(x_pos) + 8, self.margin_y + 12, f"< {int(self.MIN_T)}°C {val_attuale}")
+                val_attuale = T("current_val").format(v=fmt_float(self.current_temp))
+                painter.drawText(int(x_pos) + 8, self.margin_y + 12, f"< {fmt_val(self.MIN_T)}{unit_t} {val_attuale}")
 
             elif self.current_temp > self.MAX_T:
                 x_pos = w - self.margin_x
                 painter.setPen(QPen(QColor("#ff3333"), 2, Qt.DashLine))
                 painter.drawLine(int(x_pos), self.margin_y, int(x_pos), h - self.margin_y)
-                val_attuale = T("current_val").format(v=f"{self.current_temp:.1f}")
-                text = f"> {int(self.MAX_T)}°C {val_attuale}"
+                val_attuale = T("current_val").format(v=fmt_float(self.current_temp))
+                text = f"> {fmt_val(self.MAX_T)}{unit_t} {val_attuale}"
                 tw = painter.fontMetrics().horizontalAdvance(text)
                 painter.drawText(int(x_pos) - tw - 8, self.margin_y + 12, text)
 
@@ -359,10 +423,11 @@ class InteractiveCurveWidget(QWidget):
                 painter.drawLine(curr_x, curr_y, curr_x, h - self.margin_y)
 
                 painter.setPen(Qt.NoPen)
-                painter.setBrush(QBrush(QColor("#00e5ff")))
+                painter.setBrush(QBrush(QColor(get_accent())))
                 painter.drawEllipse(QPointF(curr_x, curr_y), 4, 4)
 
-                tooltip_text = f"{self.current_temp:.1f}°C | {int(self.current_pwm)}%"
+                # Tooltip pallino corrente formattato
+                tooltip_text = f"{fmt_float(self.current_temp)}{unit_t} | {fmt_val(self.current_pwm)}%"
                 font.setPointSize(9); font.setBold(True); painter.setFont(font)
                 metrics = painter.fontMetrics()
                 tw = metrics.horizontalAdvance(tooltip_text)
@@ -376,11 +441,11 @@ class InteractiveCurveWidget(QWidget):
                 if ty < 5:
                     ty = curr_y + 15
 
-                painter.setPen(QPen(QColor("#00e5ff"), 1))
+                painter.setPen(QPen(QColor(get_accent()), 1))
                 painter.setBrush(QBrush(QColor("#1e1e2e")))
                 painter.drawRoundedRect(QRectF(tx - 4, ty - 2, tw + 8, th + 4), 4, 4)
 
-                painter.setPen(QColor("#00e5ff"))
+                painter.setPen(QColor(get_accent()))
                 painter.drawText(int(tx), int(ty + th - 3), tooltip_text)
 
         if self.isEnabled():
@@ -389,7 +454,7 @@ class InteractiveCurveWidget(QWidget):
                 x = self.t_to_x(t); y = self.p_to_y(p)
                 is_active = (i == self.dragging_idx or i == self.hover_idx or i == self.selected_idx)
 
-                node_color = QColor("#ffffff") if is_active else QColor("#00e5ff")
+                node_color = QColor("#ffffff") if is_active else QColor(get_accent())
                 r = 6 if is_active else 4
 
                 painter.setPen(QPen(QColor("#1e1e2e"), 1))
@@ -397,7 +462,8 @@ class InteractiveCurveWidget(QWidget):
                 painter.drawEllipse(QPointF(x, y), r, r)
 
                 if is_active:
-                    tooltip_text = f"{t}°C | {p}%"
+                    # Tooltip del punto selezionato/hover formattato
+                    tooltip_text = f"{fmt_float(t)}{unit_t} | {fmt_val(p)}%"
                     font.setPointSize(9); painter.setFont(font)
                     metrics = painter.fontMetrics()
                     tw = metrics.horizontalAdvance(tooltip_text)
@@ -406,15 +472,15 @@ class InteractiveCurveWidget(QWidget):
                     ty = y - r - th - 5
 
                     painter.setPen(Qt.NoPen)
-                    painter.setBrush(QBrush(QColor("#00e5ff")))
+                    painter.setBrush(QBrush(QColor(get_accent())))
                     painter.drawRoundedRect(QRectF(tx - 4, ty - 2, tw + 8, th + 4), 3, 3)
 
                     painter.setPen(QPen(QColor("#11111b")))
                     painter.drawText(int(tx), int(ty + th - 3), tooltip_text)
 
 class ChannelControlWidget(QGroupBox):
-    """Componente UI per il controllo logico e visivo del singolo canale hardware"""
-    def __init__(self, channel_id, engine, parent=None):
+    """Componente UI per il controllo visivo del singolo canale hardware"""
+    def __init__(self, channel_id, engine=None, parent=None):
         super().__init__("", parent)
         self.channel_id = channel_id
         self.engine = engine
@@ -430,7 +496,7 @@ class ChannelControlWidget(QGroupBox):
         lbl_ch.setStyleSheet("font-size: 18px; color: #a6adc8;")
 
         self.edit_name = QLineEdit()
-        self.edit_name.setStyleSheet("font-size: 18px; border: none; background: transparent; color: #00e5ff; font-weight: bold;")
+        self.edit_name.setStyleSheet("font-size: 18px; border: none; background: transparent; color: get_accent(); font-weight: bold;")
 
         saved_name = global_config["channels_names"].get(str(self.channel_id), T("unnamed_hw"))
         self.edit_name.setText(saved_name)
@@ -500,7 +566,7 @@ class ChannelControlWidget(QGroupBox):
         self.chk_hysteresis = QCheckBox(T("hysteresis"))
         self.chk_hysteresis.setStyleSheet("font-size: 13px; font-weight: normal;")
 
-        self.spin_hysteresis = QDoubleSpinBox()
+        self.spin_hysteresis = RomanDoubleSpinBox()
         self.spin_hysteresis.setDecimals(0)
         self.spin_hysteresis.setRange(2, 60)
         self.spin_hysteresis.setValue(5)
@@ -546,7 +612,7 @@ class ChannelControlWidget(QGroupBox):
         auto_layout.addWidget(self.graph_auto)
 
         self.btn_toggle_auto = QPushButton()
-        self.btn_toggle_auto.setStyleSheet("text-align: left; background: transparent; border: none; color: #00e5ff; font-weight: bold; padding: 5px 0; font-size: 14px;")
+        self.btn_toggle_auto.setStyleSheet("text-align: left; background: transparent; border: none; color: get_accent(); font-weight: bold; padding: 5px 0; font-size: 14px;")
         self.btn_toggle_auto.setCursor(Qt.PointingHandCursor)
         self.btn_toggle_auto.clicked.connect(self.toggle_auto_controls)
         auto_layout.addWidget(self.btn_toggle_auto)
@@ -555,18 +621,54 @@ class ChannelControlWidget(QGroupBox):
         slider_layout = QFormLayout(self.container_auto_controls)
         slider_layout.setContentsMargins(0, 5, 0, 0)
 
-        self.slider_t_min = self.create_slider(10, 100, 35); self.val_t_min = QLabel("35 °C")
-        self.slider_t_max = self.create_slider(10, 100, 45); self.val_t_max = QLabel("45 °C")
-        self.slider_p_min = self.create_slider(0, 100, 0); self.val_p_min = QLabel("0 %")
-        self.slider_p_max = self.create_slider(0, 100, 100); self.val_p_max = QLabel("100 %")
+        self.slider_t_min = self.create_slider(10, 100, 35); self.val_t_min = QLabel()
+        self.slider_t_max = self.create_slider(10, 100, 45); self.val_t_max = QLabel()
+        self.slider_p_min = self.create_slider(0, 100, 0); self.val_p_min = QLabel()
+        self.slider_p_max = self.create_slider(0, 100, 100); self.val_p_max = QLabel()
         self.slider_gamma = QSlider(Qt.Horizontal); self.slider_gamma.setRange(1, 30); self.slider_gamma.setValue(10)
-        self.val_gamma = QLabel("1.0")
+        self.val_gamma = QLabel()
 
-        self.slider_t_min.valueChanged.connect(lambda v: (self.val_t_min.setText(f"{v} °C"), self.update_graph_auto(), self.update_auto_toggle_text()))
-        self.slider_t_max.valueChanged.connect(lambda v: (self.val_t_max.setText(f"{v} °C"), self.update_graph_auto(), self.update_auto_toggle_text()))
-        self.slider_p_min.valueChanged.connect(lambda v: (self.val_p_min.setText(f"{v} %"), self.update_graph_auto(), self.update_auto_toggle_text()))
-        self.slider_p_max.valueChanged.connect(lambda v: (self.val_p_max.setText(f"{v} %"), self.update_graph_auto(), self.update_auto_toggle_text()))
-        self.slider_gamma.valueChanged.connect(lambda v: (self.val_gamma.setText(f"{v/10.0}"), self.update_graph_auto()))
+        def update_val_t_min(v):
+            is_la = global_config.get("lang") == "la"
+            self.val_t_min.setText(f"{to_roman(v)} °G" if is_la else f"{v} °C")
+            self.update_graph_auto()
+            self.update_auto_toggle_text()
+
+        def update_val_t_max(v):
+            is_la = global_config.get("lang") == "la"
+            self.val_t_max.setText(f"{to_roman(v)} °G" if is_la else f"{v} °C")
+            self.update_graph_auto()
+            self.update_auto_toggle_text()
+
+        def update_val_p_min(v):
+            is_la = global_config.get("lang") == "la"
+            self.val_p_min.setText(f"{to_roman(v)} %" if is_la else f"{v} %")
+            self.update_graph_auto()
+            self.update_auto_toggle_text()
+
+        def update_val_p_max(v):
+            is_la = global_config.get("lang") == "la"
+            self.val_p_max.setText(f"{to_roman(v)} %" if is_la else f"{v} %")
+            self.update_graph_auto()
+            self.update_auto_toggle_text()
+
+        def update_val_gamma(v):
+            is_la = global_config.get("lang") == "la"
+            self.val_gamma.setText(to_roman(v / 10.0) if is_la else str(v / 10.0))
+            self.update_graph_auto()
+
+        self.slider_t_min.valueChanged.connect(update_val_t_min)
+        self.slider_t_max.valueChanged.connect(update_val_t_max)
+        self.slider_p_min.valueChanged.connect(update_val_p_min)
+        self.slider_p_max.valueChanged.connect(update_val_p_max)
+        self.slider_gamma.valueChanged.connect(update_val_gamma)
+
+        # Inizializziamo le etichette con il valore di default
+        update_val_t_min(35)
+        update_val_t_max(45)
+        update_val_p_min(0)
+        update_val_p_max(100)
+        update_val_gamma(10)
 
         slider_layout.addRow(QLabel(T("t_min")), self.make_row(self.slider_t_min, self.val_t_min))
         slider_layout.addRow(QLabel(T("t_max")), self.make_row(self.slider_t_max, self.val_t_max))
@@ -595,7 +697,7 @@ class ChannelControlWidget(QGroupBox):
         manual_layout.addWidget(lbl_tip)
 
         self.btn_toggle_manual = QPushButton()
-        self.btn_toggle_manual.setStyleSheet("text-align: left; background: transparent; border: none; color: #00e5ff; font-weight: bold; padding: 5px 0; font-size: 14px;")
+        self.btn_toggle_manual.setStyleSheet("text-align: left; background: transparent; border: none; color: get_accent(); font-weight: bold; padding: 5px 0; font-size: 14px;")
         self.btn_toggle_manual.setCursor(Qt.PointingHandCursor)
         self.btn_toggle_manual.clicked.connect(self.toggle_manual_controls)
         manual_layout.addWidget(self.btn_toggle_manual)
@@ -607,11 +709,11 @@ class ChannelControlWidget(QGroupBox):
         scale_layout = QHBoxLayout()
         lbl_scale = QLabel(T("manual_range"))
         lbl_scale.setStyleSheet("color: #a6adc8; font-size: 12px; font-weight: bold;")
-        self.spin_scale_min = QSpinBox()
+        self.spin_scale_min = RomanSpinBox()
         self.spin_scale_min.setRange(0, 150)
         self.spin_scale_min.setValue(10)
         self.spin_scale_min.setSuffix(" °C")
-        self.spin_scale_max = QSpinBox()
+        self.spin_scale_max = RomanSpinBox()
         self.spin_scale_max.setRange(10, 200)
         self.spin_scale_max.setValue(100)
         self.spin_scale_max.setSuffix(" °C")
@@ -631,15 +733,15 @@ class ChannelControlWidget(QGroupBox):
         node_layout = QHBoxLayout(self.box_node_edit)
         node_layout.setContentsMargins(0, 10, 0, 0)
         lbl_node_edit = QLabel(T("manual_node"))
-        lbl_node_edit.setStyleSheet("color: #00e5ff;")
+        lbl_node_edit.setStyleSheet("color: get_accent();")
 
-        self.spin_temp = QDoubleSpinBox()
+        self.spin_temp = RomanDoubleSpinBox()
         self.spin_temp.setRange(10.0, 100.0)
         self.spin_temp.setDecimals(1)
         self.spin_temp.setSingleStep(0.1)
         self.spin_temp.setSuffix(" °C")
 
-        self.spin_pwm = QDoubleSpinBox()
+        self.spin_pwm = RomanDoubleSpinBox()
         self.spin_pwm.setRange(0.0, 100.0)
         self.spin_pwm.setDecimals(1)
         self.spin_pwm.setSingleStep(0.1)
@@ -669,9 +771,9 @@ class ChannelControlWidget(QGroupBox):
         # Riga 1: Target Temp
         target_layout = QHBoxLayout()
         lbl_pid = QLabel(T("pid_target"))
-        lbl_pid.setStyleSheet("color: #00e5ff; font-weight: bold; font-size: 15px;")
+        lbl_pid.setStyleSheet("color: get_accent(); font-weight: bold; font-size: 15px;")
 
-        self.spin_pid_target = QDoubleSpinBox()
+        self.spin_pid_target = RomanDoubleSpinBox()
         self.spin_pid_target.setRange(20.0, 80.0)
         self.spin_pid_target.setDecimals(1)
         self.spin_pid_target.setSingleStep(0.5)
@@ -713,19 +815,19 @@ class ChannelControlWidget(QGroupBox):
         custom_pid_layout = QHBoxLayout(self.box_pid_custom)
         custom_pid_layout.setContentsMargins(0, 5, 0, 0)
 
-        self.spin_pid_kp = QDoubleSpinBox()
+        self.spin_pid_kp = RomanDoubleSpinBox()
         self.spin_pid_kp.setPrefix(f"{T('pid_prop')} ")
         self.spin_pid_kp.setDecimals(1) # <--- Modificato (es. 5.0)
         self.spin_pid_kp.setRange(0.0, 100.0)
         self.spin_pid_kp.setSingleStep(0.5)
 
-        self.spin_pid_ki = QDoubleSpinBox()
+        self.spin_pid_ki = RomanDoubleSpinBox()
         self.spin_pid_ki.setPrefix(f"{T('pid_int')} ")
         self.spin_pid_ki.setDecimals(2) # <--- Modificato (es. 0.08)
         self.spin_pid_ki.setRange(0.0, 100.0)
         self.spin_pid_ki.setSingleStep(0.01)
 
-        self.spin_pid_kd = QDoubleSpinBox()
+        self.spin_pid_kd = RomanDoubleSpinBox()
         self.spin_pid_kd.setPrefix(f"{T('pid_der')} ")
         self.spin_pid_kd.setDecimals(1) # <--- Modificato (es. 0.3)
         self.spin_pid_kd.setRange(0.0, 100.0)
@@ -752,17 +854,20 @@ class ChannelControlWidget(QGroupBox):
         self.slider_p_fixed = QSlider(Qt.Horizontal)
         self.slider_p_fixed.setRange(0, 100)
         self.slider_p_fixed.setValue(100)
-        self.val_p_fixed = QLabel("100 %")
+        self.val_p_fixed = QLabel()
         self.val_p_fixed.setFixedWidth(45)
-        self.slider_p_fixed.valueChanged.connect(lambda v: self.val_p_fixed.setText(f"{v} %"))
+
+        def update_val_p_fixed(v):
+            is_la = global_config.get("lang") == "la"
+            self.val_p_fixed.setText(f"{to_roman(v)} %" if is_la else f"{v} %")
+
+        self.slider_p_fixed.valueChanged.connect(update_val_p_fixed)
+        update_val_p_fixed(100)
 
         fixed_layout.addWidget(lbl_p_fixed)
         fixed_layout.addWidget(self.slider_p_fixed)
         fixed_layout.addWidget(self.val_p_fixed)
         main_layout.addWidget(self.box_fixed)
-
-        self.update_graph_auto()
-        self.update_ui_mode()
 
     def toggle_auto_controls(self):
         is_visible = self.container_auto_controls.isVisible()
@@ -772,7 +877,7 @@ class ChannelControlWidget(QGroupBox):
     def update_auto_toggle_text(self):
         icon_name = "chevron_down.svg" if self.container_auto_controls.isVisible() else "chevron_right.svg"
         icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "icons", icon_name)
-        self.btn_toggle_auto.setIcon(QIcon(get_colored_pixmap(icon_path, 16, "#00e5ff")))
+        self.btn_toggle_auto.setIcon(QIcon(get_colored_pixmap(icon_path, 16, get_accent())))
         if self.container_auto_controls.isVisible():
             self.btn_toggle_auto.setText(f" {T('hide_curve_params')}")
         else:
@@ -780,7 +885,15 @@ class ChannelControlWidget(QGroupBox):
             t_M = self.slider_t_max.value()
             p_m = self.slider_p_min.value()
             p_M = self.slider_p_max.value()
-            self.btn_toggle_auto.setText(f" {T('show_curve_params').format(tm=t_m, tM=t_M, pm=p_m, pM=p_M)}")
+
+            is_la = global_config.get("lang") == "la"
+            if is_la:
+                txt = T('show_curve_params').format(tm=to_roman(t_m), tM=to_roman(t_M), pm=to_roman(p_m), pM=to_roman(p_M))
+                txt = txt.replace("°C", "°G")
+            else:
+                txt = T('show_curve_params').format(tm=t_m, tM=t_M, pm=p_m, pM=p_M)
+
+            self.btn_toggle_auto.setText(f" {txt}")
 
     def toggle_manual_controls(self):
         is_visible = self.container_manual_controls.isVisible()
@@ -790,13 +903,21 @@ class ChannelControlWidget(QGroupBox):
     def update_manual_toggle_text(self):
         icon_name = "chevron_down.svg" if self.container_manual_controls.isVisible() else "chevron_right.svg"
         icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "icons", icon_name)
-        self.btn_toggle_manual.setIcon(QIcon(get_colored_pixmap(icon_path, 16, "#00e5ff")))
+        self.btn_toggle_manual.setIcon(QIcon(get_colored_pixmap(icon_path, 16, get_accent())))
         if self.container_manual_controls.isVisible():
             self.btn_toggle_manual.setText(f" {T('hide_graph_ctrls')}")
         else:
             min_x = self.spin_scale_min.value()
             max_x = self.spin_scale_max.value()
-            self.btn_toggle_manual.setText(f" {T('show_graph_ctrls').format(min=min_x, max=max_x)}")
+
+            is_la = global_config.get("lang") == "la"
+            if is_la:
+                txt = T('show_graph_ctrls').format(min=to_roman(min_x), max=to_roman(max_x))
+                txt = txt.replace("°C", "°G")
+            else:
+                txt = T('show_graph_ctrls').format(min=min_x, max=max_x)
+
+            self.btn_toggle_manual.setText(f" {txt}")
 
     def on_manual_scale_changed(self):
         min_v = self.spin_scale_min.value()
@@ -874,7 +995,11 @@ class ChannelControlWidget(QGroupBox):
         if ok and new_name.strip():
             global_config["sensors"][s_id] = new_name.strip()
             save_config(global_config)
-            self.refresh_sensors()
+
+            # Cerca tutti i widget dei canali nell'applicazione e li aggiorna tutti simultaneamente
+            for top_widget in QApplication.topLevelWidgets():
+                for child in top_widget.findChildren(ChannelControlWidget):
+                    child.refresh_sensors()
 
     def refresh_sensors(self):
         current_selection = self.combo_sensors.currentData()
@@ -892,11 +1017,12 @@ class ChannelControlWidget(QGroupBox):
             index = self.combo_delta_cold.findData(current_cold)
             if index >= 0: self.combo_delta_cold.setCurrentIndex(index)
 
-    def process_telemetry(self, temps_dict, rpms_dict, volts_dict, is_controlling):
+    def process_telemetry(self, temps_dict, rpms_dict, volts_dict, pwm_loads_dict):
         sensor_id = self.combo_sensors.currentData()
         cold_sensor_id = self.combo_delta_cold.currentData()
         raw_temp = temps_dict.get(sensor_id)
 
+        # Calcolo del Delta T e isteresi mantenuto SOLO per la stampa a schermo (grafica)
         if self.chk_delta.isChecked() and cold_sensor_id:
             cold_temp = temps_dict.get(cold_sensor_id)
             working_temp = self.engine.calculate_virtual_delta(raw_temp, cold_temp)
@@ -906,10 +1032,17 @@ class ChannelControlWidget(QGroupBox):
             display_str = f"Temp: {format_temp(working_temp)}"
 
         rpm = rpms_dict.get(self.channel_id, 0)
-        self.lbl_rpm.setText(f"Speed: {rpm} RPM")
-
         volt = volts_dict.get(self.channel_id, 0.0)
-        self.lbl_volt.setText(f"Volt: {volt:.2f} V")
+
+        if global_config.get("lang") == "la":
+            self.lbl_rpm.setText(f"Speed: {to_roman(int(rpm))} RPM")
+        else:
+            self.lbl_rpm.setText(f"Speed: {rpm} RPM")
+
+        if global_config.get("lang") == "la":
+            self.lbl_volt.setText(f"Volt: {to_roman(volt)} V")
+        else:
+            self.lbl_volt.setText(f"Volt: {volt:.2f} V")
 
         if working_temp is not None:
             if self.chk_hysteresis.isChecked():
@@ -927,58 +1060,23 @@ class ChannelControlWidget(QGroupBox):
         else:
             self.lbl_temp.setText(f"Temp: {T('err_sensor')}")
 
-        # --- INIZIO NUOVA LOGICA DI MAPPATURA ---
-        logical_percent = None
 
-        if self.radio_fixed.isChecked():
-            logical_percent = float(self.slider_p_fixed.value())
+        # 1. Legge il valore (0-100%) e aggiorna l'etichetta
+        hardware_percent = pwm_loads_dict.get(self.channel_id, 0)
+
+        if global_config.get("lang") == "la":
+            self.lbl_pwm.setText(f"Power: {to_roman(int(hardware_percent))}")
         else:
-            if working_temp is not None:
-                if self.radio_pid.isChecked():
-                    target = self.spin_pid_target.value()
-
-                    pid_mode = "Normal"
-                    if self.radio_pid_slow.isChecked(): pid_mode = "Slow"
-                    elif self.radio_pid_fast.isChecked(): pid_mode = "Fast"
-                    elif self.radio_pid_custom.isChecked(): pid_mode = "Custom"
-
-                    kp = self.spin_pid_kp.value()
-                    ki = self.spin_pid_ki.value()
-                    kd = self.spin_pid_kd.value()
-
-                    # Chiamata pulita: calcola solo la logica da 0 a 100
-                    logical_percent = self.engine.calculate_pwm_pid(
-                        self.channel_id, working_temp, target,
-                        pid_mode, kp, ki, kd
-                    )
-                elif self.radio_auto.isChecked():
-                    logical_percent = self.engine.calculate_pwm_auto(
-                        working_temp, self.slider_t_min.value(), self.slider_t_max.value(),
-                        self.slider_p_min.value(), self.slider_p_max.value(), self.slider_gamma.value() / 10.0
-                    )
-                elif self.radio_manual.isChecked():
-                    logical_percent = self.engine.calculate_pwm_manual(working_temp, self.graph_manual.points)
-
-        # Mappatura Hardware (Potenza Minima)
-        if logical_percent is not None:
-            hw_config = global_config.get("hardware_channels", {}).get(str(self.channel_id), {})
-            min_power = hw_config.get("min_power", 0)
-
-            # Converte il valore logico in fisico tramite il motore
-            pwm_val_byte, hardware_percent = self.engine.apply_hardware_limits(
-                self.channel_id, logical_percent, min_power
-            )
-
             self.lbl_pwm.setText(f"Power: {int(hardware_percent)} %")
 
-            if working_temp is not None:
-                self.graph_auto.update_curve(self.slider_t_min.value(), self.slider_t_max.value(), self.slider_p_min.value(), self.slider_p_max.value(), self.slider_gamma.value() / 10.0, working_temp)
-                self.graph_manual.update_telemetry(working_temp, hardware_percent)
-
-            if is_controlling:
-                return pwm_val_byte
-
-        return None
+        # 2. Aggiorna i grafici per mostrare il pallino indicatore
+        if working_temp is not None:
+            self.graph_auto.update_curve(
+                self.slider_t_min.value(), self.slider_t_max.value(),
+                self.slider_p_min.value(), self.slider_p_max.value(),
+                self.slider_gamma.value() / 10.0, working_temp
+            )
+            self.graph_manual.update_telemetry(working_temp, hardware_percent)
 
     def get_state(self):
         mode = "fixed"
@@ -996,7 +1094,7 @@ class ChannelControlWidget(QGroupBox):
             "t_max": self.slider_t_max.value(),
             "p_min": self.slider_p_min.value(),
             "p_max": self.slider_p_max.value(),
-            "gamma": self.slider_gamma.value(),
+            "gamma": self.slider_gamma.value() / 10.0,
             "points": self.graph_manual.points,
             "p_fixed": self.slider_p_fixed.value(),
             "pid_target": self.spin_pid_target.value(),
@@ -1042,13 +1140,13 @@ class ChannelControlWidget(QGroupBox):
         self.spin_pid_kp.setValue(state_dict.get("pid_kp", 0.0))
         self.spin_pid_ki.setValue(state_dict.get("pid_ki", 0.0))
         self.spin_pid_kd.setValue(state_dict.get("pid_kd", 0.0))
-
         self.slider_t_min.setValue(state_dict.get("t_min", 35))
         self.slider_t_max.setValue(state_dict.get("t_max", 45))
         self.slider_p_min.setValue(state_dict.get("p_min", 0))
         self.slider_p_max.setValue(state_dict.get("p_max", 100))
-        self.slider_gamma.setValue(state_dict.get("gamma", 10))
-
+        raw_gamma = state_dict.get("gamma", 1.0)
+        tick = int(round(raw_gamma * 10)) if isinstance(raw_gamma, float) else int(raw_gamma)
+        self.slider_gamma.setValue(max(1, min(30, tick)))
         m_scale_min = state_dict.get("m_scale_min", 10)
         m_scale_max = state_dict.get("m_scale_max", 100)
         self.spin_scale_min.blockSignals(True)
@@ -1096,6 +1194,10 @@ class ProcessMappingDialog(QDialog):
         self.combo_profiles.addItems(global_config.get("profiles", {}).keys())
 
         self.btn_add = QPushButton(T("btn_add"))
+        is_la = global_config.get("lang") == "la"
+        add_bg = "#FFD700" if is_la else "#313244"
+        add_fg = "#11111b" if is_la else "#cdd6f4"
+        self.btn_add.setStyleSheet(f"background-color: {add_bg}; color: {add_fg}; font-weight: bold; padding: 5px; border-radius: 4px;")
         self.btn_add.clicked.connect(self.add_mapping)
 
         add_layout.addWidget(self.txt_process, stretch=2)
@@ -1108,7 +1210,7 @@ class ProcessMappingDialog(QDialog):
         layout.addLayout(add_layout)
 
         self.btn_remove = QPushButton(T("btn_remove"))
-        self.btn_remove.setStyleSheet("background-color: #ff3333; color: #ffffff;")
+        self.btn_remove.setStyleSheet("background-color: #8B0000; color: #ffffff; font-weight: bold; padding: 5px; border-radius: 4px;") # Rosso scuro imperiale
         self.btn_remove.clicked.connect(self.remove_mapping)
         layout.addWidget(self.btn_remove)
 
@@ -1170,7 +1272,7 @@ class MeltdownDialog(QDialog):
         bg_layout.addWidget(lbl_msg)
 
         self.lbl_timer = QLabel("")
-        self.lbl_timer.setStyleSheet("color: #00e5ff; font-size: 18px; font-weight: bold;")
+        self.lbl_timer.setStyleSheet("color: get_accent(); font-size: 18px; font-weight: bold;")
         self.lbl_timer.setAlignment(Qt.AlignCenter)
         bg_layout.addWidget(self.lbl_timer)
 
@@ -1267,14 +1369,14 @@ class SparklineWidget(QWidget):
         polygon.append(QPointF(w, h)) # Punto finale in basso a destra per chiudere il riempimento
 
         # 1. Disegna lo sfondo sfumato/semi-trasparente
-        brush_color = QColor("#00e5ff")
+        brush_color = QColor(get_accent())
         brush_color.setAlpha(30) # Molto trasparente
         painter.setPen(Qt.NoPen)
         painter.setBrush(QBrush(brush_color))
         painter.drawPolygon(polygon)
 
         # 2. Disegna la linea vera e propria (escludendo i punti di origine sul fondo)
-        painter.setPen(QPen(QColor("#00e5ff"), 1.5, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        painter.setPen(QPen(QColor(get_accent()), 1.5, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         painter.setBrush(Qt.NoBrush)
         painter.drawPolyline(polygon.mid(1, len(self.data)))
 
@@ -1308,7 +1410,7 @@ class PWMFillBar(QWidget):
 
             # Cambia colore visivamente se la ventola sta lavorando molto
             if self.percent < 50:
-                color = QColor("#00e5ff") # Turchese AquaControl
+                color = QColor(get_accent()) # Turchese AquaControl
             elif self.percent < 80:
                 color = QColor("#f9e2af") # Giallo/Ambra morbido
             else:

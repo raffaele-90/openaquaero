@@ -1,46 +1,41 @@
 #!/bin/bash
-# AquaControl
-# Copyright (C) 2026 Raffaele Schiavone
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-# AquaControl - Uninstaller Universale Linux (v4.0)
+# AquaControl - Universal Linux Uninstaller (5.0.0)
 
 if [ "$EUID" -ne 0 ]; then
-  echo "ERRORE: Per disinstallare AquaControl, esegui lo script come root (es. sudo ./uninstaller.sh)"
+  echo "ERROR: run this uninstaller as root (e.g. sudo ./uninstaller.sh)"
   exit 1
 fi
 
-echo "=> Rimozione dei file eseguibili e librerie..."
+echo "=> Stopping and disabling services..."
+systemctl disable --now aquacontrold.service 2>/dev/null || true
+systemctl --global disable aquacontrol-agent.service 2>/dev/null || true
+
+echo "=> Removing files..."
 rm -rf /usr/lib/aquacontrol
 rm -f /usr/bin/aquacontrol
-
-echo "=> Rimozione del lanciatore e dell'icona..."
+rm -f /etc/systemd/system/aquacontrold.service
+rm -f /etc/systemd/user/aquacontrol-agent.service
 rm -f /usr/share/applications/aquacontrol.desktop
 rm -f /usr/share/icons/hicolor/512x512/apps/aquacontrol.png
 
-echo "=> Rimozione delle regole di sistema (udev e sudoers)..."
-rm -f /etc/udev/rules.d/99-aquaero.rules
-rm -f /etc/sudoers.d/99-aquacontrol-shutdown
-
-echo "=> Aggiornamento dei demoni di sistema e cache..."
-udevadm control --reload-rules
-udevadm trigger
-
-if command -v gtk-update-icon-cache &> /dev/null; then
-    gtk-update-icon-cache -f -t /usr/share/icons/hicolor > /dev/null 2>&1
+echo "=> Reloading system state..."
+systemctl daemon-reload
+if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+    gtk-update-icon-cache -f -t /usr/share/icons/hicolor >/dev/null 2>&1
 fi
 
-echo "=> Disinstallazione di sistema completata!"
-echo "Nota: I tuoi profili personali in ~/.config/aquacontrol non sono stati eliminati."
+echo ""
+echo "=> Uninstall complete."
+echo ""
+
+read -r -p "Also remove all configuration and profiles, and the 'aquacontrol' group? [y/N] " ANSWER
+case "$ANSWER" in
+    [yY]|[yY][eE][sS])
+        rm -rf /var/lib/aquacontrol
+        groupdel aquacontrol 2>/dev/null || true
+        echo "=> Full cleanup done."
+        ;;
+    *)
+        echo "=> Kept your configuration in /var/lib/aquacontrol and the 'aquacontrol' group."
+        ;;
+esac

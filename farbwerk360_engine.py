@@ -288,6 +288,46 @@ class Farbwerk360Engine:
                 continue
         return False
 
+    def apply_payload_hex(self, payload_hex, save_flash=False):
+        """Invia un payload GIA' COSTRUITO (hex di 1666 byte) alla scheda. È il punto di
+        SOLA APPLICAZIONE usato dal demone: la costruzione dell'effetto resta nella GUI,
+        qui si spinge soltanto il pacchetto già pronto. Ritorna True se l'invio riesce."""
+        if hid is None:
+            return False
+        try:
+            payload = bytearray.fromhex(payload_hex)
+        except Exception:
+            return False
+        if len(payload) != self.PAYLOAD_SIZE:
+            return False
+
+        self.connect()
+        if not self.device_paths:
+            self.reset_usb_device()
+            self.connect()
+            if not self.device_paths:
+                return False
+
+        sent = False
+        for path in self.device_paths:
+            try:
+                dev = hid.device()
+                dev.open_path(path)
+                res = dev.send_feature_report(payload)
+                dev.close()
+                if res >= 0:
+                    sent = True
+                    break
+            except IOError:
+                self.reset_usb_device()
+                continue
+            except Exception:
+                continue
+
+        if sent and save_flash:
+            self.save_to_flash()
+        return sent
+
     # --------------------------------------------- compatibilita' / comodita'
     def apply_static_colors(self, channel_configs, brightness=None):
         """Imposta i colori (un colore pieno per canale) e invia in un colpo solo.
